@@ -1,6 +1,6 @@
 import * as mocks from "@/data/mocks";
 import type {
-  AlertaClinico, CheckIn, Conversa, Mensagem, Paciente, Plano, PostFeed,
+  AlertaClinico, CheckIn, Conversa, Mensagem, Nutricionista, Paciente, Plano, PostFeed,
   PreferenciasNotificacao, RegistroDiario, RespostaQuestionario, SessaoFoto, RegistroPeso,
 } from "@/types";
 
@@ -15,6 +15,7 @@ function clone<T>(v: T): T {
 }
 
 export const db = {
+  nutricionista: clone(mocks.NUTRICIONISTA) as Nutricionista,
   pacientes: clone(mocks.PACIENTES) as Paciente[],
   resumosAdesao: clone(mocks.RESUMOS_ADESAO),
   planos: [clone(mocks.PLANO_MARINA)] as Plano[],
