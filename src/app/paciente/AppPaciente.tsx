@@ -19,6 +19,7 @@ import { usePaciente } from "@/hooks/usePaciente";
 import { useCheckin } from "@/hooks/useCheckin";
 import { useDiario } from "@/hooks/useDiario";
 import { useToast } from "@/hooks/useToast";
+import { useSincronizacaoOffline } from "@/hooks/useSincronizacaoOffline";
 import { descricaoParaDiario } from "@/services/montadorService";
 import { formatarDataLonga } from "@/utils/datas";
 import type { ItemMontadorResolvido } from "@/services/montadorService";
@@ -38,6 +39,7 @@ export function AppPaciente({ pacienteId, nutricionistaId }: { pacienteId: strin
   const { estado: estadoCheckin, salvar: salvarCheckin } = useCheckin(pacienteId);
   const { registrarTroca } = useDiario(pacienteId);
   const avisar = useToast();
+  useSincronizacaoOffline();
 
   const feitoHoje = estadoCheckin.status === "pronto" ? estadoCheckin.dado : null;
 
@@ -52,7 +54,14 @@ export function AppPaciente({ pacienteId, nutricionistaId }: { pacienteId: strin
   const handleSalvarCheckin = async (dados: DadosCheckIn) => {
     const resultado = await salvarCheckin(nutricionistaId, dados);
     ui.fecharCheckin();
-    avisar(resultado.avisoSangue ? "Check-in salvo. Sua nutri foi avisada." : "Check-in salvo. Até amanhã.");
+    if (resultado.avisoSangue) {
+      avisar("Check-in salvo. Sua nutri foi avisada.");
+    } else if (resultado.pendente) {
+      // Offline-first (briefing §10): nunca trava esperando rede — salva no aparelho e sincroniza sozinho depois.
+      avisar("Check-in salvo neste aparelho. Sincroniza sozinho quando a conexão voltar.");
+    } else {
+      avisar("Check-in salvo. Até amanhã.");
+    }
     ui.irPara("hoje");
   };
 

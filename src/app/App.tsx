@@ -1,11 +1,16 @@
+import { Suspense, lazy } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import "@/styles/global.css";
 import { useAuth } from "@/hooks/useAuth";
 import { Login } from "./Login";
 import { Mfa } from "./Mfa";
-import { AppPaciente } from "./paciente/AppPaciente";
-import { AppNutri } from "./nutricionista/AppNutri";
 import { NUTRICIONISTA_ID } from "@/data/mocks/ids";
+
+// Performance (briefing §17): paciente e nutricionista nunca usam o app um
+// do outro na mesma sessão — cada bundle só baixa o que a sua tela precisa
+// em vez de carregar os dois de largada.
+const AppPaciente = lazy(() => import("./paciente/AppPaciente").then((m) => ({ default: m.AppPaciente })));
+const AppNutri = lazy(() => import("./nutricionista/AppNutri").then((m) => ({ default: m.AppNutri })));
 
 function Carregando() {
   return (
@@ -33,20 +38,22 @@ export function App() {
 
   return (
     <BrowserRouter>
-      <Routes>
-        {sessao.papel === "paciente" && (
-          <>
-            <Route path="/paciente/*" element={<AppPaciente pacienteId={sessao.perfilId} nutricionistaId={NUTRICIONISTA_ID} />} />
-            <Route path="*" element={<Navigate to="/paciente" replace />} />
-          </>
-        )}
-        {sessao.papel === "nutricionista" && (
-          <>
-            <Route path="/nutricionista/*" element={<AppNutri nutricionistaId={sessao.perfilId} />} />
-            <Route path="*" element={<Navigate to="/nutricionista" replace />} />
-          </>
-        )}
-      </Routes>
+      <Suspense fallback={<Carregando />}>
+        <Routes>
+          {sessao.papel === "paciente" && (
+            <>
+              <Route path="/paciente/*" element={<AppPaciente pacienteId={sessao.perfilId} nutricionistaId={NUTRICIONISTA_ID} />} />
+              <Route path="*" element={<Navigate to="/paciente" replace />} />
+            </>
+          )}
+          {sessao.papel === "nutricionista" && (
+            <>
+              <Route path="/nutricionista/*" element={<AppNutri nutricionistaId={sessao.perfilId} />} />
+              <Route path="*" element={<Navigate to="/nutricionista" replace />} />
+            </>
+          )}
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

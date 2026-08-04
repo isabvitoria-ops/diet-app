@@ -15,3 +15,4 @@ export * from "./usePreferencias";
 export * from "./usePaciente";
 export * from "./usePacientes";
 export * from "./useDashboard";
+export * from "./useSincronizacaoOffline";
