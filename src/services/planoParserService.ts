@@ -122,5 +122,5 @@ OPÇÃO Comida
 OPÇÃO Hambúrguer caseiro
 - Pão de hambúrguer: 70g
 - Patinho grelhado: 90g
-- Mussarela: 15g
+- Queijo mussarela: 15g
 VEGETAIS mínimo 100g`;

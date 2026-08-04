@@ -4,11 +4,30 @@ function semAcento(s: string): string {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
+/**
+ * Grafias do dia a dia que não batem com o nome da TACO. A nutricionista
+ * escreve "mussarela" (a forma corrente) e a base registra "mozarela" — sem
+ * isto a busca devolvia zero sugestões e o item ficava impossível de
+ * vincular pela tela, travando a publicação do plano inteiro.
+ */
+const SINONIMOS: Record<string, string> = {
+  mussarela: "mozarela",
+  muzzarela: "mozarela",
+  mozzarella: "mozarela",
+  mucarela: "mozarela",
+  iogurte: "iogurte",
+  aipim: "mandioca",
+  macaxeira: "mandioca",
+  tangerina: "mexerica",
+  bergamota: "mexerica",
+};
+
 function tokens(s: string): string[] {
   return semAcento(s)
     .replace(/[^a-z0-9\s]/g, " ")
     .split(/\s+/)
-    .filter((t) => t.length > 2);
+    .filter((t) => t.length > 2)
+    .map((t) => SINONIMOS[t] ?? t);
 }
 
 export interface ResultadoBusca {

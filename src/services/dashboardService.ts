@@ -1,6 +1,17 @@
 import type { DashboardResumo } from "@/types";
 import { alertaRepository, chatRepository, pacienteRepository, questionarioRepository } from "@/repositories";
 
+/** Intervalo da semana corrente (segunda 00:00 → domingo 23:59:59) na hora local. */
+function semanaCorrente(agora = new Date()): { inicio: Date; fim: Date } {
+  const inicio = new Date(agora);
+  const diaDaSemana = (inicio.getDay() + 6) % 7; // segunda = 0
+  inicio.setDate(inicio.getDate() - diaDaSemana);
+  inicio.setHours(0, 0, 0, 0);
+  const fim = new Date(inicio);
+  fim.setDate(fim.getDate() + 7);
+  return { inicio, fim };
+}
+
 /**
  * Tela nova (briefing §15) — não existe protótipo para portar. Todo o
  * agregado é calculado aqui, nunca na tela: o componente só renderiza
@@ -34,11 +45,21 @@ export async function buscarResumoDashboard(nutricionistaId: string): Promise<Da
     .filter((r) => r.pendencias.some((p) => p.toLowerCase().includes("check-in")))
     .map((r) => ({ pacienteId: r.pacienteId, nome: nomePorId.get(r.pacienteId) ?? "", ultimoCheckin: r.ultimoCheckinRotulo }));
 
+  // "Esta semana" precisa de data, não do rótulo livre: contar qualquer
+  // paciente com consulta marcada punha "dia 20" e "próxima terça" dentro
+  // do número da semana corrente.
+  const { inicio, fim } = semanaCorrente();
+
   return {
     pacientesAtivos: ativos.length,
     consultasSemana: ativos
-      .filter((p) => p.proximaConsultaRotulo && p.proximaConsultaRotulo !== "—")
-      .map((p) => ({ pacienteId: p.id, nome: p.nome, quando: p.proximaConsultaRotulo! })),
+      .filter((p) => {
+        if (!p.proximaConsultaEm) return false;
+        const quando = new Date(p.proximaConsultaEm).getTime();
+        return quando >= inicio.getTime() && quando < fim.getTime();
+      })
+      .sort((a, b) => a.proximaConsultaEm!.localeCompare(b.proximaConsultaEm!))
+      .map((p) => ({ pacienteId: p.id, nome: p.nome, quando: p.proximaConsultaRotulo ?? "" })),
     mensagensPendentes: conversasComPendencia.filter((c): c is NonNullable<typeof c> => c !== null),
     checkinsPendentes,
     questionariosAguardandoLeitura: respostasPendentes.map((r) => ({

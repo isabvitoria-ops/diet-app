@@ -48,7 +48,13 @@ export function AbaEquivalencias() {
           {liberados.map((b) => <option key={b.codigoTaco} value={b.codigoTaco}>{b.nome}</option>)}
         </select>
         <div className="row" style={{ marginBottom: 14 }}>
-          <input className="input" type="number" value={gramas} min={1} onChange={(e) => setGramas(Number(e.target.value) || 0)} style={{ flex: 1 }} />
+          {/* `min` sozinho é só validação do navegador: digitando "-143" o
+              estado ia a -143 e a tela oferecia "-143 g" de equivalente. */}
+          <input
+            className="input" type="number" value={gramas} min={1}
+            onChange={(e) => setGramas(Math.max(0, Number(e.target.value) || 0))}
+            style={{ flex: 1 }}
+          />
           <span className="mono" style={{ fontSize: 14, color: "var(--ink-2)" }}>g</span>
         </div>
         <div className="eyebrow" style={{ marginBottom: 8 }}>Equivalência calculada por</div>

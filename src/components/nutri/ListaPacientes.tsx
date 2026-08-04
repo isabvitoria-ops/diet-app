@@ -82,6 +82,21 @@ export function ListaPacientes({ abrir }: { abrir: (pacienteId: string) => void 
           </button>
         ))}
       </div>
+
+      {estado.status === "pronto" && filtrados.length === 0 && (
+        <div className="card" style={{ textAlign: "center", padding: 28 }}>
+          <p style={{ fontSize: 14.5, color: "var(--ink-2)", margin: 0, lineHeight: 1.5 }}>
+            {busca.trim()
+              ? `Nenhum paciente encontrado para "${busca.trim()}".`
+              : "Nenhum paciente por aqui ainda."}
+          </p>
+          {busca.trim() && !incluirInativos && (
+            <button className="chip" style={{ marginTop: 14 }} onClick={() => setIncluirInativos(true)}>
+              Incluir inativos na busca
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

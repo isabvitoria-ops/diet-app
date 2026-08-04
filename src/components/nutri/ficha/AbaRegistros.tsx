@@ -1,18 +1,24 @@
 import { corBristol } from "@/constants/bristol";
 import { useFichaPaciente } from "@/contexts/FichaPacienteContext";
 import { useHistoricoCheckin } from "@/hooks/useCheckin";
-import { pacienteService } from "@/services";
+import { pacienteService, questionarioService } from "@/services";
 import { useAsync } from "@/hooks/useAsync";
 import { useToast } from "@/hooks/useToast";
+import { formatarDataCurta } from "@/utils/datas";
 
 export function AbaRegistros() {
   const { paciente } = useFichaPaciente();
   const { estado } = useHistoricoCheckin(paciente.id, 14);
   const [estadoResumos] = useAsync(() => pacienteService.listarPacientesComResumo(), []);
+  const [estadoResposta] = useAsync(
+    () => questionarioService.buscarUltimaRespostaLegivel(paciente.id),
+    [paciente.id],
+  );
   const avisar = useToast();
 
   const resumo = estadoResumos.status === "pronto" ? estadoResumos.dado.find((r) => r.paciente.id === paciente.id)?.resumo : null;
   const historico = estado.status === "pronto" ? estado.dado : [];
+  const ultimaResposta = estadoResposta.status === "pronto" ? estadoResposta.dado : null;
 
   return (
     <>
@@ -36,41 +42,40 @@ export function AbaRegistros() {
 
       <div style={{ height: 12 }} />
       <div className="card" style={{ borderLeft: "3px solid var(--sage)" }}>
-        <div className="eyebrow" style={{ marginBottom: 8 }}>Preparação de consulta · última resposta</div>
-        <div style={{ display: "grid", gap: 8, fontSize: 14, lineHeight: 1.5 }}>
-          <div><strong>Seguiu o plano:</strong> na maior parte</div>
-          <div><strong>Atrapalhou:</strong> comer fora, fome fora de hora</div>
-          <div><strong>Quer melhorar:</strong> "conseguir levar marmita pelo menos 3 dias"</div>
+        <div className="eyebrow" style={{ marginBottom: 8 }}>
+          Preparação de consulta · última resposta
+          {ultimaResposta && ` · ${formatarDataCurta(new Date(ultimaResposta.respondidoEm))}`}
         </div>
+        {estadoResposta.status === "carregando" && <p style={{ fontSize: 14, color: "var(--ink-2)", margin: 0 }}>Carregando…</p>}
+        {estadoResposta.status === "pronto" && !ultimaResposta?.itens.length && (
+          <p style={{ fontSize: 14, color: "var(--ink-2)", margin: 0, lineHeight: 1.5 }}>
+            {paciente.nome.split(" ")[0]} ainda não respondeu ao questionário mensal.
+          </p>
+        )}
+        {ultimaResposta && ultimaResposta.itens.length > 0 && (
+          <div style={{ display: "grid", gap: 8, fontSize: 14, lineHeight: 1.5 }}>
+            {ultimaResposta.itens.map((i) => (
+              <div key={i.pergunta}><strong>{i.pergunta}:</strong> {i.resposta}</div>
+            ))}
+          </div>
+        )}
       </div>
 
+      {/*
+        O bloco "Preferências dentro do que você liberou" mostrava contagens
+        fixas escritas no código ("Batata 7×", "Ovo 8×") como se fossem os
+        registros da paciente — número inventado apresentado a uma
+        profissional que decide prescrição em cima dele. O diário hoje grava
+        `refeicaoId` + adesão, não qual opção foi escolhida, então o dado
+        ainda não existe. Fica o estado honesto até o registro da escolha
+        entrar no modelo.
+      */}
       <div style={{ height: 12 }} />
       <div className="card">
         <div className="eyebrow" style={{ marginBottom: 4 }}>Preferências dentro do que você liberou</div>
-        <p style={{ fontSize: 13.5, color: "var(--ink-2)", margin: "6px 0 16px", lineHeight: 1.5 }}>
-          Não são desvios. É o que ela escolhe quando tem opção — útil para a próxima prescrição.
+        <p style={{ fontSize: 13.5, color: "var(--ink-2)", margin: "6px 0 0", lineHeight: 1.5 }}>
+          Ainda não disponível. O diário registra a adesão de cada refeição, mas não qual opção foi escolhida — sem isso não dá para dizer o que {paciente.nome.split(" ")[0]} prefere quando tem alternativa.
         </p>
-        {[
-          { slot: "Carboidrato do almoço", opcoes: [["Arroz, tipo 1, cozido", 3], ["Batata, inglesa, cozida", 7], ["Mandioca, cozida", 0]] as [string, number][] },
-          { slot: "Proteína do jantar", opcoes: [["Merluza, filé, assado", 2], ["Ovo, cozido", 8], ["Carne, patinho, grelhado", 4]] as [string, number][] },
-          { slot: "Fruta", opcoes: [["Banana, prata", 11], ["Mamão, papaia", 3]] as [string, number][] },
-        ].map((g) => {
-          const total = g.opcoes.reduce((s, o) => s + o[1], 0) || 1;
-          return (
-            <div key={g.slot} style={{ paddingTop: 12, borderTop: "1px solid var(--line)" }}>
-              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 9 }}>{g.slot}</div>
-              {g.opcoes.map(([nome, n]) => (
-                <div key={nome} className="row" style={{ gap: 10, marginBottom: 7 }}>
-                  <span style={{ fontSize: 13, width: 150, flexShrink: 0, color: n === 0 ? "var(--ink-3)" : "var(--ink)" }}>{nome}</span>
-                  <div style={{ flex: 1, height: 8, background: "var(--paper)", borderRadius: 99 }}>
-                    <div style={{ width: `${(n / total) * 100}%`, height: "100%", borderRadius: 99, background: n === 0 ? "transparent" : "var(--plum-2)" }} />
-                  </div>
-                  <span className="mono" style={{ fontSize: 11.5, color: "var(--ink-3)", width: 26, textAlign: "right", flexShrink: 0 }}>{n}×</span>
-                </div>
-              ))}
-            </div>
-          );
-        })}
       </div>
 
       <div style={{ height: 12 }} />

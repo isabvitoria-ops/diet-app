@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FichaPacienteProvider } from "@/contexts/FichaPacienteContext";
+import { FichaPacienteProvider, useFichaPaciente } from "@/contexts/FichaPacienteContext";
 import { usePaciente } from "@/hooks/usePaciente";
 import { AbaPlano } from "./AbaPlano";
 import { AbaAlimentos } from "./AbaAlimentos";
@@ -13,6 +13,17 @@ const TABS: [TabId, string][] = [
   ["plano", "Plano"], ["alimentos", "Alimentos"], ["equiv", "Equivalências"],
   ["materiais", "Materiais"], ["registros", "Registros"], ["acesso", "Acesso"],
 ];
+
+/** Uma alteração que o servidor recusou não pode passar em silêncio. */
+function AvisoGravacao() {
+  const { erroGravacao } = useFichaPaciente();
+  if (!erroGravacao) return null;
+  return (
+    <div className="card" role="alert" style={{ borderLeft: "3px solid var(--clay)", marginBottom: 14 }}>
+      <div style={{ fontSize: 14, color: "var(--clay)", lineHeight: 1.5 }}>{erroGravacao}</div>
+    </div>
+  );
+}
 
 export function FichaPaciente({ pacienteId, nutricionistaId, voltar }: { pacienteId: string; nutricionistaId: string; voltar: () => void }) {
   const { estado, atualizar } = usePaciente(pacienteId);
@@ -57,6 +68,7 @@ export function FichaPaciente({ pacienteId, nutricionistaId, voltar }: { pacient
             <button key={id} className={`chip ${tab === id ? "on" : ""}`} onClick={() => setTab(id)} style={{ whiteSpace: "nowrap", flexShrink: 0 }}>{l}</button>
           ))}
         </div>
+        <AvisoGravacao />
         {tab === "plano" && <AbaPlano nutricionistaId={nutricionistaId} />}
         {tab === "alimentos" && <AbaAlimentos />}
         {tab === "equiv" && <AbaEquivalencias />}

@@ -16,16 +16,27 @@ export function usePaciente(pacienteId: string) {
     return estadoServidor;
   }, [override, estadoServidor]);
 
+  const [erroGravacao, setErroGravacao] = useState<string | null>(null);
+
   const atualizar = useCallback(
     async (paciente: Paciente) => {
       // Atualiza a tela na hora — a gravação já aconteceu (ou está
       // acontecendo) no service; não há por que voltar pra "carregando" e
       // fazer as 6 abas da ficha piscarem por causa de um switch.
+      const anterior = override;
       setOverride(paciente);
-      await pacienteService.atualizarPaciente(paciente);
+      setErroGravacao(null);
+      try {
+        await pacienteService.atualizarPaciente(paciente);
+      } catch (e) {
+        // Sem isto a tela seguia mostrando um dado que o servidor recusou.
+        setOverride(anterior);
+        setErroGravacao(e instanceof Error ? e.message : "Não foi possível salvar a alteração.");
+        throw e;
+      }
     },
-    [],
+    [override],
   );
 
-  return { estado, atualizar, recarregar };
+  return { estado, atualizar, recarregar, erroGravacao };
 }

@@ -22,7 +22,10 @@ export interface Paciente extends RegistroDominio {
   ativo: boolean;
   convidadoEm: ISODateString;
   ultimoLoginEm: ISODateString | null;
+  /** Texto que a nutricionista lê ("quinta, 14h") — livre, nunca usado para contas. */
   proximaConsultaRotulo?: string;
+  /** A data de verdade da próxima consulta. É o que permite contar "esta semana". */
+  proximaConsultaEm?: ISODateString;
   faseRotulo?: string;
   /** Códigos TACO liberados para este paciente — só o que está aqui existe para ela (montador, trocas, busca). */
   alimentosLiberadosCodigoTaco: number[];

@@ -19,6 +19,36 @@ export async function enviarResposta(
   return questionarioRepository.salvarResposta(nutricionistaId, pacienteId, template.id, template.versao, respostas);
 }
 
+/** Uma resposta já casada com as perguntas do template, pronta para a tela. */
+export interface RespostaLegivel {
+  respondidoEm: string;
+  itens: { pergunta: string; resposta: string }[];
+}
+
+/**
+ * Última resposta do questionário deste paciente, com o texto das perguntas
+ * resolvido. Alimenta o bloco "Preparação de consulta" da ficha, que antes
+ * mostrava respostas fixas escritas no código como se fossem dela.
+ */
+export async function buscarUltimaRespostaLegivel(pacienteId: string): Promise<RespostaLegivel | null> {
+  const [respostas, template] = await Promise.all([
+    questionarioRepository.listarRespostas(pacienteId),
+    questionarioRepository.buscarTemplateAtivo("mensal"),
+  ]);
+  const ultima = [...respostas].sort((a, b) => b.respondidoEm.localeCompare(a.respondidoEm))[0];
+  if (!ultima || !template) return null;
+
+  const itens = template.perguntas
+    .map((p) => {
+      const bruta = ultima.respostas[p.id];
+      if (bruta === undefined || bruta === "" || (Array.isArray(bruta) && bruta.length === 0)) return null;
+      return { pergunta: p.texto, resposta: Array.isArray(bruta) ? bruta.join(", ") : String(bruta) };
+    })
+    .filter((i): i is { pergunta: string; resposta: string } => i !== null);
+
+  return { respondidoEm: ultima.respondidoEm, itens };
+}
+
 export type FaixaIncomodo = { nome: "leve" | "moderada" | "intensa"; corId: "sage" | "gold" | "clay" };
 
 /**
