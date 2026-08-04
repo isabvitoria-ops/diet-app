@@ -45,3 +45,22 @@ export function useChat(pacienteId: string, nutricionistaId: string) {
 
   return { conversa, mensagens, carregando, enviar, marcarLidas, recarregar: carregar };
 }
+
+/**
+ * Só o contador de não lidas — usado no topbar (badge do envelope) sem
+ * precisar montar o modal de chat inteiro. Sem isto, o badge só aparecia
+ * depois que o paciente abria o chat pela primeira vez (o protótipo
+ * inicializava `naoLidas` direto em 1; aqui o valor real vem do backend).
+ */
+export function useNaoLidasChatInicial(pacienteId: string) {
+  const definirNaoLidasChat = useUiPacienteStore((s) => s.definirNaoLidasChat);
+  useEffect(() => {
+    let ativo = true;
+    chatService.buscarConversaDoPaciente(pacienteId).then((c) => {
+      if (ativo && c) definirNaoLidasChat(c.naoLidasParaPaciente);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, [pacienteId, definirNaoLidasChat]);
+}

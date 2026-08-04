@@ -9,6 +9,9 @@ import { usePlano } from "@/hooks/usePlano";
 import { useDiario } from "@/hooks/useDiario";
 import { useUiPacienteStore, type AbaPaciente } from "@/store/uiPacienteStore";
 import { SkeletonCard } from "@/components/ui/EstadoAsync";
+import type { CheckIn } from "@/types";
+
+const HISTORICO_VAZIO: CheckIn[] = [];
 
 export function Hoje({ pacienteId, irPara }: { pacienteId: string; irPara: (aba: AbaPaciente) => void }) {
   const { estado: estadoCheckin } = useCheckin(pacienteId);
@@ -22,7 +25,7 @@ export function Hoje({ pacienteId, irPara }: { pacienteId: string; irPara: (aba:
   const questionarioPendente = useUiPacienteStore((s) => s.questionarioPendente);
 
   const feitoHoje = estadoCheckin.status === "pronto" ? estadoCheckin.dado : null;
-  const historico = estadoHistorico.status === "pronto" ? estadoHistorico.dado : [];
+  const historico = estadoHistorico.status === "pronto" ? estadoHistorico.dado : HISTORICO_VAZIO;
 
   const fita: PontoFita[] = useMemo(() => {
     const arr: PontoFita[] = historico.map((c) => ({ dia: new Date(`${c.data}T00:00:00`), bristol: c.bristol, hoje: false }));
@@ -36,8 +39,15 @@ export function Hoje({ pacienteId, irPara }: { pacienteId: string; irPara: (aba:
       ? estadoPlano.dado.refeicoes.find((m) => parseInt(m.horario, 10) >= horaAgora) ?? estadoPlano.dado.refeicoes[0]
       : null;
   const sequencia = historico.length + (feitoHoje ? 1 : 0);
-  const registradas = estadoDiario.status === "pronto" ? estadoDiario.dado.length : 0;
-  const totalRefeicoes = estadoPlano.status === "pronto" && estadoPlano.dado ? estadoPlano.dado.refeicoes.length : 0;
+  const refeicoesDoDia = estadoPlano.status === "pronto" && estadoPlano.dado ? estadoPlano.dado.refeicoes : [];
+  const totalRefeicoes = refeicoesDoDia.length;
+  // Conta só refeições de verdade do plano — uma refeição livre montada
+  // pelo paciente (Montador) fica registrada no diário, mas não "preenche"
+  // uma das N refeições prescritas do dia (mesmo comportamento do protótipo).
+  const registradas =
+    estadoDiario.status === "pronto"
+      ? refeicoesDoDia.filter((r) => estadoDiario.dado.some((registro) => registro.refeicaoId === r.id)).length
+      : 0;
 
   return (
     <div className="scroll">

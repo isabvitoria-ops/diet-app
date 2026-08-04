@@ -39,6 +39,10 @@ export function Diario({ pacienteId, nutricionistaId }: { pacienteId: string; nu
   const refeicoes = estadoPlano.dado.refeicoes;
   const registros = estadoDiario.dado;
   const registroPorRefeicao = (id: string) => registros.find((r) => r.refeicaoId === id);
+  // Conta só refeições de verdade do plano — uma refeição livre montada pelo
+  // paciente (Montador) fica registrada, mas não tem `refeicaoId` de nenhuma
+  // das N refeições prescritas do dia (mesmo comportamento do protótipo).
+  const registradasCount = refeicoes.filter((r) => registroPorRefeicao(r.id)).length;
 
   const abrir = (r: Refeicao) => {
     const existente = registroPorRefeicao(r.id);
@@ -73,7 +77,7 @@ export function Diario({ pacienteId, nutricionistaId }: { pacienteId: string; nu
         })}
       </div>
       <div style={{ fontSize: 13, color: "var(--ink-2)", marginBottom: 22 }}>
-        {registros.length} de {refeicoes.length} refeições registradas hoje.
+        {registradasCount} de {refeicoes.length} refeições registradas hoje.
       </div>
 
       <div style={{ display: "grid", gap: 12 }}>

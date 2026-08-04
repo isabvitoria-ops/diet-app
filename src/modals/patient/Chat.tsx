@@ -9,15 +9,21 @@ import { useToast } from "@/hooks/useToast";
 const RESPOSTAS_RAPIDAS = ["Meus dias estão mais soltos", "Tive muita dor ontem", "Posso trocar um alimento?", "Dúvida sobre o preparo"];
 
 export function Chat({ pacienteId, nutricionistaId, onFechar }: { pacienteId: string; nutricionistaId: string; onFechar: () => void }) {
-  const { mensagens, carregando, enviar, marcarLidas } = useChat(pacienteId, nutricionistaId);
+  const { conversa, mensagens, carregando, enviar, marcarLidas } = useChat(pacienteId, nutricionistaId);
   const [texto, setTexto] = useState("");
   const fimRef = useRef<HTMLDivElement>(null);
   const avisar = useToast();
+  const jaMarcouLidas = useRef(false);
 
   useEffect(() => {
-    marcarLidas("paciente");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // `conversa` só fica disponível depois que useChat termina de carregar
+    // (é assíncrono) — marcar como lida precisa esperar por isso, senão o
+    // guard `if (!conversa) return` dentro de marcarLidas vira um no-op.
+    if (conversa && !jaMarcouLidas.current) {
+      jaMarcouLidas.current = true;
+      marcarLidas("paciente");
+    }
+  }, [conversa, marcarLidas]);
 
   useEffect(() => {
     fimRef.current?.scrollIntoView({ behavior: "smooth" });

@@ -7,6 +7,10 @@ import { useCheckin, useHistoricoCheckin } from "@/hooks/useCheckin";
 import { useSessoesFoto } from "@/hooks/useEvolucao";
 import { useToast } from "@/hooks/useToast";
 import { useUiPacienteStore } from "@/store/uiPacienteStore";
+import type { CheckIn, SessaoFoto } from "@/types";
+
+const HISTORICO_VAZIO: CheckIn[] = [];
+const SESSOES_VAZIO: SessaoFoto[] = [];
 
 export function Evolucao({ pacienteId, nutricionistaId }: { pacienteId: string; nutricionistaId: string }) {
   const { estado: estadoCheckin } = useCheckin(pacienteId);
@@ -16,8 +20,8 @@ export function Evolucao({ pacienteId, nutricionistaId }: { pacienteId: string; 
   const avisar = useToast();
 
   const feitoHoje = estadoCheckin.status === "pronto" ? estadoCheckin.dado : null;
-  const historico = estadoHistorico.status === "pronto" ? estadoHistorico.dado : [];
-  const sessoes = estadoSessoes.status === "pronto" ? estadoSessoes.dado : [];
+  const historico = estadoHistorico.status === "pronto" ? estadoHistorico.dado : HISTORICO_VAZIO;
+  const sessoes = estadoSessoes.status === "pronto" ? estadoSessoes.dado : SESSOES_VAZIO;
 
   const dados: PontoFita[] = useMemo(() => {
     const arr: PontoFita[] = historico.map((c) => ({ dia: new Date(`${c.data}T00:00:00`), bristol: c.bristol }));
