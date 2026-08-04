@@ -11,6 +11,7 @@ export * as questionarioService from "./questionarioService";
 export * as evolucaoService from "./evolucaoService";
 export * as preferenciasService from "./preferenciasService";
 export * as alimentoService from "./alimentoService";
+export * as fichaAlimentoService from "./fichaAlimentoService";
 export * as alertaService from "./alertaService";
 export * as dashboardService from "./dashboardService";
 export * as authService from "./authService";

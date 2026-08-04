@@ -10,4 +10,5 @@ export * as questionarioRepository from "./questionarioRepository";
 export * as evolucaoRepository from "./evolucaoRepository";
 export * as preferenciasRepository from "./preferenciasRepository";
 export * as alimentoRepository from "./alimentoRepository";
+export * as fichaAlimentoRepository from "./fichaAlimentoRepository";
 export * as alertaRepository from "./alertaRepository";

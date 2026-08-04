@@ -31,9 +31,9 @@ interface UiPacienteState {
   abrirLembretes: () => void;
   fecharLembretes: () => void;
 
-  /** Código TACO da ficha educativa aberta ao tocar num alimento do plano — null quando fechada. */
-  fichaAlimentoAberta: number | null;
-  abrirFicha: (codigoTaco: number) => void;
+  /** Ficha educativa aberta ao tocar num alimento do plano — null quando fechada. */
+  fichaAlimentoAberta: { codigoTaco: number; nomeExibicao: string } | null;
+  abrirFicha: (codigoTaco: number, nomeExibicao: string) => void;
   fecharFicha: () => void;
 
   /**
@@ -79,7 +79,7 @@ export const useUiPacienteStore = create<UiPacienteState>((set) => ({
   fecharLembretes: () => set({ lembretesAberto: false }),
 
   fichaAlimentoAberta: null,
-  abrirFicha: (codigoTaco) => set({ fichaAlimentoAberta: codigoTaco }),
+  abrirFicha: (codigoTaco, nomeExibicao) => set({ fichaAlimentoAberta: { codigoTaco, nomeExibicao } }),
   fecharFicha: () => set({ fichaAlimentoAberta: null }),
 
   agua: 3,

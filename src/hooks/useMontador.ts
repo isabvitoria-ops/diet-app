@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
-import { alimentoService, montadorService } from "@/services";
+import { fichaAlimentoService, montadorService } from "@/services";
 import { useAsync } from "./useAsync";
 
 export function useMontador(pacienteId: string) {
-  const [estadoPool, recarregarPool] = useAsync(() => alimentoService.buscarPoolMontador(pacienteId), [pacienteId]);
+  const [estadoPool, recarregarPool] = useAsync(() => fichaAlimentoService.buscarPoolMontador(pacienteId), [pacienteId]);
   const [selecionados, setSelecionados] = useState<number[]>([]);
 
   const alternar = (codigoTaco: number) => {

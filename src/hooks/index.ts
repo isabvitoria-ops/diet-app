@@ -2,6 +2,7 @@ export * from "./useAsync";
 export * from "./useToast";
 export * from "./useAuth";
 export * from "./usePlano";
+export * from "./useFicha";
 export * from "./useCheckin";
 export * from "./useChat";
 export * from "./useDiario";

@@ -1,4 +1,4 @@
-import type { Alimento, GrupoAlimento, ItemMontador } from "@/types";
+import type { Alimento, GrupoAlimento } from "@/types";
 import { alimentoRepository } from "@/repositories";
 import { equivalenteNutriente, type ResultadoBusca } from "@/utils/buscaAlimento";
 import { NUTRIENTE_BASE_POR_GRUPO } from "@/types";
@@ -18,10 +18,6 @@ export async function listarPorGrupo(grupo: GrupoAlimento): Promise<Alimento[]> 
 
 export async function contarTotal(): Promise<number> {
   return alimentoRepository.contarTotal();
-}
-
-export async function buscarPoolMontador(pacienteId: string): Promise<ItemMontador[]> {
-  return alimentoRepository.buscarPoolMontador(pacienteId);
 }
 
 export interface EquivalenciaCalculada {
