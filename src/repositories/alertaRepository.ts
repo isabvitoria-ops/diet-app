@@ -14,6 +14,11 @@ export async function criarAlerta(
   origemRegistroId: string,
 ): Promise<AlertaClinico> {
   await atraso(100);
+  const jaExiste = db.alertasClinicos.find(
+    (a) => a.pacienteId === pacienteId && a.origem === origem && a.origemRegistroId === origemRegistroId,
+  );
+  if (jaExiste) return jaExiste;
+
   const alerta: AlertaClinico = {
     id: gerarId("alerta"),
     nutricionistaId,

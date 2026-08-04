@@ -3,6 +3,29 @@ import type { QuestionarioTemplate, RespostaQuestionario } from "@/types";
 import { questionarioService } from "@/services";
 import { useUiPacienteStore } from "@/store/uiPacienteStore";
 
+/**
+ * Inicializa o badge de questionário pendente no topbar, chamado uma vez
+ * no mount de AppPaciente. Separado do useQuestionarioMensal (que carrega
+ * o template completo) porque o badge precisa aparecer antes do usuário
+ * abrir o modal.
+ */
+export function useQuestionarioPendenteInicial(pacienteId: string) {
+  const definirQuestionarioPendente = useUiPacienteStore((s) => s.definirQuestionarioPendente);
+  useEffect(() => {
+    let ativo = true;
+    (async () => {
+      const t = await questionarioService.buscarTemplateMensal();
+      if (ativo && t) {
+        const pendente = await questionarioService.pendenteEsteMs(pacienteId, t);
+        if (ativo) definirQuestionarioPendente(pendente);
+      }
+    })();
+    return () => {
+      ativo = false;
+    };
+  }, [pacienteId, definirQuestionarioPendente]);
+}
+
 export function useQuestionarioMensal(pacienteId: string) {
   const [template, setTemplate] = useState<QuestionarioTemplate | null>(null);
   const [carregando, setCarregando] = useState(true);

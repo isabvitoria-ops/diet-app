@@ -19,6 +19,7 @@ import { usePaciente } from "@/hooks/usePaciente";
 import { useCheckin } from "@/hooks/useCheckin";
 import { useDiario } from "@/hooks/useDiario";
 import { useNaoLidasChatInicial } from "@/hooks/useChat";
+import { useQuestionarioPendenteInicial } from "@/hooks/useQuestionario";
 import { useToast } from "@/hooks/useToast";
 import { useSincronizacaoOffline } from "@/hooks/useSincronizacaoOffline";
 import { descricaoParaDiario } from "@/services/montadorService";
@@ -42,6 +43,7 @@ export function AppPaciente({ pacienteId, nutricionistaId }: { pacienteId: strin
   const avisar = useToast();
   useSincronizacaoOffline();
   useNaoLidasChatInicial(pacienteId);
+  useQuestionarioPendenteInicial(pacienteId);
 
   const feitoHoje = estadoCheckin.status === "pronto" ? estadoCheckin.dado : null;
 

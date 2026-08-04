@@ -21,9 +21,14 @@ import { buscarAlimentos, tokensDe } from "@/utils/buscaAlimento";
 function resolverItem(escrito: string, quantidadeTexto: string): PlanoRascunhoItem {
   const achados = buscarAlimentos(TACO, escrito, 5);
   const forte = achados.length > 0 && achados[0]!.pontos >= tokensDe(escrito).length * 1.6;
+
+  const quantidadeMatch = quantidadeTexto.match(/^([\d.]+)\s*(.*)$/);
+  const valor = quantidadeMatch ? parseFloat(quantidadeMatch[1]!) : 1;
+  const unidade = quantidadeMatch ? quantidadeMatch[2]!.trim() : quantidadeTexto;
+
   return {
     escrito,
-    quantidade: { valor: 1, unidade: quantidadeTexto },
+    quantidade: { valor, unidade },
     alimentoCodigoTaco: forte ? achados[0]!.alimento.codigoTaco : null,
     sugestoesCodigoTaco: achados.map((a) => a.alimento.codigoTaco),
     substituicoes: [],
@@ -47,16 +52,17 @@ export function parsearTextoDePlano(texto: string): RefeicaoRascunho[] {
     const observacaoMatch = linha.match(/^obs\.?:?\s*(.+)$/i);
     const vegetais = /^vegetais/i.test(linha);
 
-    if (cabecalho) {
+    if (observacaoMatch && refeicaoAtual) {
+      refeicaoAtual.observacao = observacaoMatch[1]!.trim();
+    } else if (cabecalho) {
       refeicaoAtual = {
         nome: cabecalho[1]!.trim(),
         horario: cabecalho[2]!.replace("h", ":"),
         opcoes: [],
         regraVegetaisAtiva: false,
       };
-      opcaoAtual = { itens: [] };
-      refeicaoAtual.opcoes.push(opcaoAtual);
       refeicoes.push(refeicaoAtual);
+      opcaoAtual = null;
       ultimoItem = null;
     } else if (opcaoMatch && refeicaoAtual) {
       opcaoAtual = { nome: opcaoMatch[1]!.trim(), itens: [] };
@@ -64,15 +70,17 @@ export function parsearTextoDePlano(texto: string): RefeicaoRascunho[] {
       ultimoItem = null;
     } else if (substituicaoMatch && ultimoItem) {
       ultimoItem.substituicoes.push(resolverItem(substituicaoMatch[1]!.trim(), substituicaoMatch[2]!.trim()));
-    } else if (itemMatch && opcaoAtual) {
+    } else if (itemMatch && refeicaoAtual) {
+      if (!opcaoAtual) {
+        opcaoAtual = { itens: [] };
+        refeicaoAtual.opcoes.push(opcaoAtual);
+      }
       const novoItem = resolverItem(itemMatch[1]!.trim(), itemMatch[2]!.trim());
       opcaoAtual.itens.push(novoItem);
       ultimoItem = novoItem;
     } else if (vegetais && refeicaoAtual) {
       refeicaoAtual.regraVegetaisAtiva = true;
       ultimoItem = null;
-    } else if (observacaoMatch && refeicaoAtual) {
-      refeicaoAtual.observacao = observacaoMatch[1]!.trim();
     }
   });
 

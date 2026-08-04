@@ -18,7 +18,10 @@ export function avaliarOrigensDeAlerta(
   }
 
   const ultimosTres = [...historicoRecente.slice(-2), checkinNovo];
-  const dorAltaSequencial = ultimosTres.length === 3 && ultimosTres.every((c) => (c.sintomas.dor ?? 0) >= 3);
+  const tresDatasDiferentes =
+    ultimosTres.length === 3 &&
+    new Set(ultimosTres.map((c) => c.data.split("T")[0])).size === 3;
+  const dorAltaSequencial = tresDatasDiferentes && ultimosTres.every((c) => (c.sintomas.dor ?? 0) >= 3);
   if (dorAltaSequencial) {
     origens.push("dor_alta_sequencial");
   }

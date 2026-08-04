@@ -270,7 +270,7 @@ export function CheckIn({
           disabled={!podeAvancar[atual]}
           onClick={() =>
             ultimo
-              ? onSalvar({ evacuou, bristol: evacuou ? bristol : null, flags, sintomas, mapaDor, humor, sono, movimento })
+              ? onSalvar({ evacuou, bristol: evacuou ? bristol : null, flags: evacuou ? flags : [], sintomas, mapaDor: temDor ? mapaDor : {}, humor, sono, movimento })
               : setPasso((p) => p + 1)
           }
         >

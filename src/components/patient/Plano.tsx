@@ -114,7 +114,7 @@ export function Plano({ pacienteId }: { pacienteId: string }) {
                         <div className="eyebrow" style={{ marginBottom: 5 }}>{it.slot}</div>
                         <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                           <button
-                            onClick={() => it.alimentoCodigoTaco && abrirFicha(it.alimentoCodigoTaco, atual.nomeExibicao)}
+                            onClick={() => atual.alimentoCodigoTaco && abrirFicha(atual.alimentoCodigoTaco, atual.nomeExibicao)}
                             style={{ flex: 1, background: "none", border: 0, padding: 0, textAlign: "left", cursor: "pointer", fontFamily: "inherit" }}
                           >
                             <div style={{ fontSize: 16, fontWeight: 500 }}>{atual.nomeExibicao}</div>
