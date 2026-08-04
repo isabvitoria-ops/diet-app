@@ -42,3 +42,16 @@ export const NUTRIENTE_BASE_POR_GRUPO: Record<GrupoAlimento, keyof Alimento> = {
   gordura: "lipideos",
   outros: "kcal",
 };
+
+/**
+ * Conteúdo educativo curto exibido ao paciente ao tocar num alimento do
+ * plano ("Ficha" no protótipo). Nunca contém valor nutricional numérico
+ * (regra #1) — só explicação em linguagem simples e dicas de preparo.
+ */
+export interface FichaEducativaAlimento {
+  alimentoCodigoTaco: number;
+  tags: string[];
+  titulo: string;
+  corpo: string;
+  dicas: string[];
+}

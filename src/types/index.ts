@@ -7,6 +7,7 @@ export * from "./paciente";
 export * from "./chat";
 export * from "./feed";
 export * from "./material";
+export * from "./artigo";
 export * from "./evolucao";
 export * from "./questionario";
 export * from "./preferencias";

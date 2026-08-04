@@ -113,3 +113,22 @@ export interface PlanoRascunhoItem {
   alimentoCodigoTaco: number | null;
   sugestoesCodigoTaco: number[];
 }
+
+/**
+ * Um alimento disponível no "Montar uma refeição" (briefing §14 · Plano
+ * alimentar). Não é um item do plano — é o catálogo, curado pela
+ * nutricionista, do que o paciente pode combinar livremente dentro do que
+ * já foi autorizado (Anexo regra #4: nunca introduz alimento novo).
+ * `bloqueado` mostra, com o motivo, um alimento que existe na base mas
+ * está fora do protocolo desta fase — valor educativo, não é o mesmo que
+ * simplesmente omitir o item.
+ */
+export interface ItemMontador {
+  alimentoCodigoTaco: number;
+  grupo: string;
+  /** Ausente quando `livre` (regra livre de vegetais) ou `bloqueado`. */
+  quantidadeBase?: Quantidade;
+  livre?: boolean;
+  bloqueado?: string;
+  aviso?: string;
+}

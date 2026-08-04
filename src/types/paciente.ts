@@ -32,3 +32,17 @@ export interface Paciente extends RegistroDominio {
   /** Regra #13: paciente registra peso mas, se "cego", não vê o número — só a nutricionista. */
   pesoModoCego: boolean;
 }
+
+/**
+ * Métricas derivadas (adesão, último check-in, pendências) para a lista de
+ * pacientes e o dashboard — nunca armazenadas em `Paciente`, sempre
+ * calculadas por `services/pacienteService` a partir do histórico real
+ * (check-ins, diário, questionários). Aqui o mock só simula o resultado
+ * já pronto que o serviço devolveria.
+ */
+export interface ResumoAdesaoPaciente {
+  pacienteId: ID;
+  adesaoPercentual: number;
+  ultimoCheckinRotulo: string;
+  pendencias: string[];
+}
