@@ -131,8 +131,8 @@ export function AppPaciente({ pacienteId, nutricionistaId }: { pacienteId: strin
           </div>
         </header>
 
-        {ui.aba === "hoje" && <Hoje pacienteId={pacienteId} irPara={ui.irPara} />}
-        {ui.aba === "plano" && <Plano pacienteId={pacienteId} />}
+        {ui.aba === "hoje" && <Hoje pacienteId={pacienteId} irPara={ui.irPara} preferenciaUnidade={paciente.preferenciaUnidade} />}
+        {ui.aba === "plano" && <Plano pacienteId={pacienteId} preferenciaUnidade={paciente.preferenciaUnidade} />}
         {ui.aba === "diario" && <Diario pacienteId={pacienteId} nutricionistaId={nutricionistaId} />}
         {ui.aba === "evolucao" && <Evolucao pacienteId={pacienteId} nutricionistaId={nutricionistaId} />}
         {ui.aba === "feed" && <Feed pacienteId={pacienteId} />}

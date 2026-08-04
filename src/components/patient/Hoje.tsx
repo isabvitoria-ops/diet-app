@@ -9,11 +9,20 @@ import { usePlano } from "@/hooks/usePlano";
 import { useDiario } from "@/hooks/useDiario";
 import { useUiPacienteStore, type AbaPaciente } from "@/store/uiPacienteStore";
 import { SkeletonCard } from "@/components/ui/EstadoAsync";
-import type { CheckIn } from "@/types";
+import { resolverQuantidadeExibicao } from "@/utils/quantidade";
+import type { CheckIn, UnidadeExibicao } from "@/types";
 
 const HISTORICO_VAZIO: CheckIn[] = [];
 
-export function Hoje({ pacienteId, irPara }: { pacienteId: string; irPara: (aba: AbaPaciente) => void }) {
+export function Hoje({
+  pacienteId,
+  irPara,
+  preferenciaUnidade,
+}: {
+  pacienteId: string;
+  irPara: (aba: AbaPaciente) => void;
+  preferenciaUnidade: UnidadeExibicao;
+}) {
   const { estado: estadoCheckin } = useCheckin(pacienteId);
   const { estado: estadoHistorico } = useHistoricoCheckin(pacienteId, 13);
   const { estado: estadoPlano } = usePlano(pacienteId);
@@ -109,7 +118,9 @@ export function Hoje({ pacienteId, irPara }: { pacienteId: string; irPara: (aba:
               {proximaRefeicao.opcoes[0]?.itens.map((it, i) => (
                 <div key={it.id} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderTop: i ? "1px solid var(--line)" : "0", fontSize: 14.5 }}>
                   <span>{it.nomeExibicao}</span>
-                  <span className="mono" style={{ color: "var(--ink-2)", fontSize: 13 }}>{it.quantidade.valor} {it.quantidade.unidade}</span>
+                  <span className="mono" style={{ color: "var(--ink-2)", fontSize: 13 }}>
+                    {resolverQuantidadeExibicao(it.quantidade, it.quantidadeCaseira, preferenciaUnidade)}
+                  </span>
                 </div>
               ))}
               <div style={{ marginTop: 14, fontSize: 13.5, color: "var(--plum)", fontWeight: 600 }}>Ver o plano completo →</div>

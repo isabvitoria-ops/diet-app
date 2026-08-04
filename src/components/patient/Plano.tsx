@@ -4,14 +4,15 @@ import { Btn } from "@/components/ui/Button";
 import { Sheet } from "@/components/ui/Sheet";
 import { SkeletonCard, EstadoErro, EstadoVazio } from "@/components/ui/EstadoAsync";
 import { corPorId } from "@/constants/cores";
-import { textoQuantidade } from "@/utils/quantidade";
+import { resolverQuantidadeExibicao } from "@/utils/quantidade";
 import { usePlano } from "@/hooks/usePlano";
 import { useUiPacienteStore } from "@/store/uiPacienteStore";
-import type { ItemPlano, Opcao, Refeicao, Substituicao } from "@/types";
+import type { ItemPlano, Opcao, Refeicao, Substituicao, UnidadeExibicao } from "@/types";
 
 type Escolha = ItemPlano | Substituicao;
 
-export function Plano({ pacienteId }: { pacienteId: string }) {
+/** Regra #7: a unidade que o paciente vê é a que a nutricionista escolheu para ele. */
+export function Plano({ pacienteId, preferenciaUnidade }: { pacienteId: string; preferenciaUnidade: UnidadeExibicao }) {
   const { estado } = usePlano(pacienteId);
   const [refeicaoAberta, setRefeicaoAberta] = useState<string | null>(null);
   const [opcaoAtivaPorRefeicao, setOpcaoAtivaPorRefeicao] = useState<Record<string, string>>({});
@@ -118,7 +119,9 @@ export function Plano({ pacienteId }: { pacienteId: string }) {
                             style={{ flex: 1, background: "none", border: 0, padding: 0, textAlign: "left", cursor: "pointer", fontFamily: "inherit" }}
                           >
                             <div style={{ fontSize: 16, fontWeight: 500 }}>{atual.nomeExibicao}</div>
-                            <div className="mono" style={{ fontSize: 13.5, color: "var(--plum)", marginTop: 3 }}>{textoQuantidade(atual.quantidade)}</div>
+                            <div className="mono" style={{ fontSize: 13.5, color: "var(--plum)", marginTop: 3 }}>
+                              {resolverQuantidadeExibicao(atual.quantidade, atual.quantidadeCaseira, preferenciaUnidade)}
+                            </div>
                           </button>
                           {podeTrocar && (
                             <button type="button" className="chip" style={{ fontSize: 13, flexShrink: 0 }} onClick={() => setTrocando({ refeicao: r, item: it })}>
@@ -171,7 +174,9 @@ export function Plano({ pacienteId }: { pacienteId: string }) {
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
                     <span style={{ fontSize: 15.5, fontWeight: 500 }}>{op.nomeExibicao}</span>
-                    <span className="mono" style={{ fontSize: 13.5, color: "var(--plum)" }}>{textoQuantidade(op.quantidade)}</span>
+                    <span className="mono" style={{ fontSize: 13.5, color: "var(--plum)" }}>
+                      {resolverQuantidadeExibicao(op.quantidade, op.quantidadeCaseira, preferenciaUnidade)}
+                    </span>
                   </div>
                   {"aviso" in op && op.aviso && <div style={{ fontSize: 13, color: "var(--clay)", marginTop: 7, lineHeight: 1.45 }}>{op.aviso}</div>}
                 </button>

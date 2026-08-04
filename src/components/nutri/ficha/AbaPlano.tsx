@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Tag } from "@/components/ui/Tag";
 import { useFichaPaciente } from "@/contexts/FichaPacienteContext";
 import { useAsync } from "@/hooks/useAsync";
@@ -6,7 +6,10 @@ import { useToast } from "@/hooks/useToast";
 import { planoService } from "@/services";
 import { parsearTextoDePlano, todosOsItensRascunho, TEXTO_EXEMPLO_IMPORTACAO } from "@/services/planoParserService";
 import { alimentoService } from "@/services";
+import { textoQuantidade } from "@/utils/quantidade";
 import type { Alimento, PlanoRascunhoItem, RefeicaoRascunho, UnidadeExibicao } from "@/types";
+
+const GRUPOS_TACO = ["carb", "prot", "laticinio", "legum", "fruta", "vegetal", "gordura", "outros"] as const;
 
 function ItemPreview({
   item, sub, alimentosPorCodigo, onVincular,
@@ -24,7 +27,7 @@ function ItemPreview({
           {sub && <span style={{ color: "var(--ink-3)" }}>ou </span>}
           {alimento ? alimento.nome : item.escrito}
         </span>
-        <span className="mono" style={{ fontSize: 13, color: "var(--plum)", flexShrink: 0 }}>{item.quantidade.unidade}</span>
+        <span className="mono" style={{ fontSize: 13, color: "var(--plum)", flexShrink: 0 }}>{textoQuantidade(item.quantidade)}</span>
       </div>
       {!alimento && (
         <div style={{ marginTop: 6 }}>
@@ -43,46 +46,70 @@ function ItemPreview({
 }
 
 export function AbaPlano({ nutricionistaId }: { nutricionistaId: string }) {
-  const { paciente } = useFichaPaciente();
+  const { paciente, atualizar } = useFichaPaciente();
   const [txt, setTxt] = useState("");
   const [refeicoes, setRefeicoes] = useState<RefeicaoRascunho[] | null>(null);
   const [obsGeral, setObsGeral] = useState("");
-  const [unidade, setUnidade] = useState<UnidadeExibicao>("g");
   const [alimentosPorCodigo, setAlimentosPorCodigo] = useState<Map<number, Alimento>>(new Map());
   const [publicando, setPublicando] = useState(false);
   const avisar = useToast();
+
+  // Regra #7: a unidade não é um estado solto da tela — é a preferência
+  // gravada no paciente. Antes o toggle escrevia num useState que ninguém
+  // lia e que nada persistia.
+  const unidade = paciente.preferenciaUnidade;
+  const definirUnidade = (nova: UnidadeExibicao) => {
+    if (nova === unidade) return;
+    atualizar({ ...paciente, preferenciaUnidade: nova });
+  };
 
   const [estadoHistorico, recarregarHistorico] = useAsync(
     () => planoService.listarHistoricoVersoes(paciente.id),
     [paciente.id],
   );
 
-  const carregarAlimentosDasSugestoes = async () => {
-    // O parser já resolve os códigos por nome; aqui só precisamos do texto
-    // de cada código (nome, para exibição) — carrega a base inteira uma vez
-    // por análise e indexa por código.
-    const grupos = ["carb", "prot", "laticinio", "legum", "fruta", "vegetal", "gordura", "outros"] as const;
-    const todos = (await Promise.all(grupos.map((g) => alimentoService.listarPorGrupo(g)))).flat();
-    setAlimentosPorCodigo(new Map(todos.map((a) => [a.codigoTaco, a])));
-  };
+  // A base TACO é carregada uma vez por ficha, não a cada tecla. Antes cada
+  // caractere digitado disparava 8 buscas de grupo em paralelo.
+  useEffect(() => {
+    let ativo = true;
+    (async () => {
+      const todos = (await Promise.all(GRUPOS_TACO.map((g) => alimentoService.listarPorGrupo(g)))).flat();
+      if (ativo) setAlimentosPorCodigo(new Map(todos.map((a) => [a.codigoTaco, a])));
+    })();
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
-  const analisar = (t: string) => {
-    setTxt(t);
-    if (!t.trim()) {
+  // O parse também sai do caminho da digitação: roda 250 ms depois que a
+  // nutricionista para de digitar, em vez de a cada tecla.
+  useEffect(() => {
+    if (!txt.trim()) {
       setRefeicoes(null);
       return;
     }
-    const parsed = parsearTextoDePlano(t);
-    setRefeicoes(parsed);
-    carregarAlimentosDasSugestoes();
-  };
+    const t = setTimeout(() => setRefeicoes(parsearTextoDePlano(txt)), 250);
+    return () => clearTimeout(t);
+  }, [txt]);
 
-  const vincular = (item: PlanoRascunhoItem, codigo: number) => {
-    item.alimentoCodigoTaco = codigo;
-    setRefeicoes((r) => (r ? [...r] : r));
-  };
+  /**
+   * Vincula sem mutar: o item vinha sendo alterado no lugar e a árvore só
+   * era "re-espalhada" no nível de cima, o que deixava o React livre para
+   * não redesenhar as folhas.
+   */
+  const vincular = useCallback((alvo: PlanoRascunhoItem, codigo: number) => {
+    const trocar = (i: PlanoRascunhoItem): PlanoRascunhoItem =>
+      i === alvo
+        ? { ...i, alimentoCodigoTaco: codigo }
+        : { ...i, substituicoes: i.substituicoes.map(trocar) };
+    setRefeicoes((rs) =>
+      rs
+        ? rs.map((r) => ({ ...r, opcoes: r.opcoes.map((o) => ({ ...o, itens: o.itens.map(trocar) })) }))
+        : rs,
+    );
+  }, []);
 
-  const itens = refeicoes ? todosOsItensRascunho(refeicoes) : [];
+  const itens = useMemo(() => (refeicoes ? todosOsItensRascunho(refeicoes) : []), [refeicoes]);
   const pendentes = itens.filter((i) => !i.alimentoCodigoTaco).length;
 
   const publicar = async () => {
@@ -109,13 +136,17 @@ export function AbaPlano({ nutricionistaId }: { nutricionistaId: string }) {
             slot: it.escrito,
             ordem: ii,
             alimentoCodigoTaco: it.alimentoCodigoTaco,
-            nomeExibicao: alimentosPorCodigo.get(it.alimentoCodigoTaco!)?.nome ?? it.escrito,
+            // O que a nutricionista escreveu manda no que o paciente lê. O
+            // nome cru da TACO ("Arroz, tipo 1, cozido") é referência de
+            // base, não texto de tela — sobrescrever aqui trocava a
+            // linguagem dela pela do banco.
+            nomeExibicao: it.escrito,
             quantidade: it.quantidade,
             substituicoes: it.substituicoes.map((sb, si) => ({
               id: `sub-${paciente.id}-${ri}-${oi}-${ii}-${si}`,
               itemPlanoId: `item-${paciente.id}-${ri}-${oi}-${ii}`,
               alimentoCodigoTaco: sb.alimentoCodigoTaco,
-              nomeExibicao: alimentosPorCodigo.get(sb.alimentoCodigoTaco!)?.nome ?? sb.escrito,
+              nomeExibicao: sb.escrito,
               quantidade: sb.quantidade,
             })),
           })),
@@ -143,12 +174,12 @@ export function AbaPlano({ nutricionistaId }: { nutricionistaId: string }) {
           Para refeições com alternativas completas, use <span className="mono">OPÇÃO Nome</span>. Uma linha começando com <span className="mono">VEGETAIS</span> vira a regra livre.
         </p>
         <textarea
-          className="input" rows={8} value={txt} onChange={(e) => analisar(e.target.value)} placeholder="Cole aqui o texto do Notion"
+          className="input" rows={8} value={txt} onChange={(e) => setTxt(e.target.value)} placeholder="Cole aqui o texto do Notion"
           style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 13 }}
         />
         <div className="row" style={{ marginTop: 10, flexWrap: "wrap" }}>
-          <button className="chip" onClick={() => analisar(TEXTO_EXEMPLO_IMPORTACAO)}>Colar exemplo</button>
-          {txt && <button className="chip" onClick={() => analisar("")}>Limpar</button>}
+          <button className="chip" onClick={() => setTxt(TEXTO_EXEMPLO_IMPORTACAO)}>Colar exemplo</button>
+          {txt && <button className="chip" onClick={() => setTxt("")}>Limpar</button>}
         </div>
       </div>
 
@@ -164,7 +195,7 @@ export function AbaPlano({ nutricionistaId }: { nutricionistaId: string }) {
             <div className="eyebrow" style={{ marginBottom: 8 }}>Mostrar quantidade em</div>
             <div style={{ display: "flex", gap: 7, marginBottom: 16 }}>
               {([["g", "Gramas"], ["caseira", "Medida caseira"]] as const).map(([id, l]) => (
-                <button key={id} className={`chip ${unidade === id ? "on" : ""}`} onClick={() => setUnidade(id)}>{l}</button>
+                <button key={id} className={`chip ${unidade === id ? "on" : ""}`} onClick={() => definirUnidade(id)}>{l}</button>
               ))}
             </div>
             <p style={{ fontSize: 12.5, color: "var(--ink-3)", margin: "0 0 16px", lineHeight: 1.5 }}>

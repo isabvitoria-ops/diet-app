@@ -10,6 +10,11 @@ export async function contarCurtidas(postId: string): Promise<number> {
   return db.curtidas[postId] ?? 0;
 }
 
+/** Se este paciente já curtiu o post — a verdade mora no banco, não no estado local da tela. */
+export async function curtidoPor(postId: string, pacienteId: string): Promise<boolean> {
+  return db.curtidasPorPaciente[pacienteId]?.has(postId) ?? false;
+}
+
 export async function alternarCurtida(postId: string, pacienteId: string): Promise<number> {
   await atraso(120);
   const curtidos = db.curtidasPorPaciente[pacienteId] ?? new Set<string>();

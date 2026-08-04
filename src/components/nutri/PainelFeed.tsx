@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Tag } from "@/components/ui/Tag";
 import { corPorId } from "@/constants/cores";
 import { tempoRelativo } from "@/utils/tempoRelativo";
-import { useFeed } from "@/hooks/useFeed";
+import { useFeedPosts } from "@/hooks/useFeed";
 import { useToast } from "@/hooks/useToast";
 import { feedService } from "@/services";
 import type { DestinoPost, TipoPost } from "@/types";
@@ -10,7 +10,7 @@ import type { DestinoPost, TipoPost } from "@/types";
 const TIPOS: TipoPost[] = ["Aviso", "Dica rápida", "Receita", "Novidade", "Vídeo"];
 
 export function PainelFeed({ nutricionistaId }: { nutricionistaId: string }) {
-  const { estado, recarregar } = useFeed();
+  const { estado, recarregar } = useFeedPosts();
   const [tipo, setTipo] = useState<TipoPost>("Dica rápida");
   const [titulo, setTitulo] = useState("");
   const [texto, setTexto] = useState("");

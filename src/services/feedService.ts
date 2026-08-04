@@ -1,12 +1,30 @@
 import type { DestinoPost, PostFeed, TipoPost } from "@/types";
 import { feedRepository } from "@/repositories";
 
-export async function listarFeed(): Promise<{ post: PostFeed; curtidas: number }[]> {
+export interface ItemFeed {
+  post: PostFeed;
+  curtidas: number;
+  /** Verdade do servidor — a tela não guarda "eu curti" em estado local (some ao trocar de aba). */
+  curtidoPorMim: boolean;
+}
+
+export async function listarFeed(pacienteId: string): Promise<ItemFeed[]> {
   const posts = await feedRepository.listarPosts();
-  const comCurtidas = await Promise.all(
+  return Promise.all(
+    posts.map(async (post) => ({
+      post,
+      curtidas: await feedRepository.contarCurtidas(post.id),
+      curtidoPorMim: await feedRepository.curtidoPor(post.id, pacienteId),
+    })),
+  );
+}
+
+/** Lista para o painel da nutricionista — sem estado de curtida por paciente. */
+export async function listarPostsPublicados(): Promise<{ post: PostFeed; curtidas: number }[]> {
+  const posts = await feedRepository.listarPosts();
+  return Promise.all(
     posts.map(async (post) => ({ post, curtidas: await feedRepository.contarCurtidas(post.id) })),
   );
-  return comCurtidas;
 }
 
 export async function alternarCurtida(postId: string, pacienteId: string): Promise<number> {

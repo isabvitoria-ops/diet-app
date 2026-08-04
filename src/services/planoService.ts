@@ -13,9 +13,16 @@ function todosOsItens(refeicoes: Refeicao[]): { item: ItemPlano; opcao: Opcao }[
   return refeicoes.flatMap((r) => r.opcoes.flatMap((opcao) => opcao.itens.map((item) => ({ item, opcao }))));
 }
 
-/** Regra #9: publicação fica bloqueada enquanto houver item sem `alimentoCodigoTaco` vinculado. */
+/**
+ * Regra #9: publicação fica bloqueada enquanto houver item sem
+ * `alimentoCodigoTaco` vinculado — **incluindo as substituições**. Uma troca
+ * não vinculada é um alimento que o paciente pode escolher e que a ficha
+ * educativa não sabe abrir; contava como "0 pendências" e ia pro ar.
+ */
 export function contarPendenciasDeVinculo(refeicoes: Refeicao[]): number {
-  return todosOsItens(refeicoes).filter(({ item }) => item.alimentoCodigoTaco === null).length;
+  return todosOsItens(refeicoes)
+    .flatMap(({ item }) => [item, ...item.substituicoes])
+    .filter((i) => i.alimentoCodigoTaco === null).length;
 }
 
 export async function publicarNovaVersao(

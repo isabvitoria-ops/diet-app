@@ -17,12 +17,47 @@ export function Sheet({ onFechar, titulo, cheia = false, children }: SheetProps)
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const anteriormenteFocado = document.activeElement as HTMLElement | null;
     ref.current?.focus();
+
+    const focaveis = () =>
+      Array.from(
+        ref.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((el) => el.offsetParent !== null);
+
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onFechar();
+      if (e.key === "Escape") {
+        onFechar();
+        return;
+      }
+      // Focus trap (briefing §19): sem isto o Tab saía do modal e ia parar
+      // nos botões da tela atrás dele, que o leitor de tela nem deveria ver.
+      if (e.key !== "Tab") return;
+      const alvos = focaveis();
+      if (alvos.length === 0) {
+        e.preventDefault();
+        ref.current?.focus();
+        return;
+      }
+      const primeiro = alvos[0]!;
+      const ultimo = alvos[alvos.length - 1]!;
+      const atual = document.activeElement;
+      if (e.shiftKey && (atual === primeiro || atual === ref.current)) {
+        e.preventDefault();
+        ultimo.focus();
+      } else if (!e.shiftKey && atual === ultimo) {
+        e.preventDefault();
+        primeiro.focus();
+      }
     };
+
     document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      anteriormenteFocado?.focus?.();
+    };
   }, [onFechar]);
 
   return (

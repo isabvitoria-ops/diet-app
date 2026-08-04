@@ -23,10 +23,13 @@ export function Evolucao({ pacienteId, nutricionistaId }: { pacienteId: string; 
   const historico = estadoHistorico.status === "pronto" ? estadoHistorico.dado : HISTORICO_VAZIO;
   const sessoes = estadoSessoes.status === "pronto" ? estadoSessoes.dado : SESSOES_VAZIO;
 
+  // "hoje" é sempre a última barra e sempre existe — mesmo sem check-in
+  // ainda. Marcar `i === length - 1` sem empurrar o dia de hoje fazia a
+  // fita destacar *ontem* como hoje enquanto o check-in não fosse feito.
   const dados: PontoFita[] = useMemo(() => {
-    const arr: PontoFita[] = historico.map((c) => ({ dia: new Date(`${c.data}T00:00:00`), bristol: c.bristol }));
-    if (feitoHoje) arr.push({ dia: new Date(), bristol: feitoHoje.bristol });
-    return arr.map((d, i, a) => ({ ...d, hoje: i === a.length - 1 }));
+    const arr: PontoFita[] = historico.map((c) => ({ dia: new Date(`${c.data}T00:00:00`), bristol: c.bristol, hoje: false }));
+    arr.push({ dia: new Date(), bristol: feitoHoje?.bristol ?? null, hoje: true });
+    return arr;
   }, [historico, feitoHoje]);
 
   const dorSerie = useMemo(() => {

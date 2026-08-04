@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Eyebrow, Card } from "@/components/ui/Card";
 import { Btn } from "@/components/ui/Button";
 import { SkeletonCard, EstadoErro } from "@/components/ui/EstadoAsync";
@@ -8,19 +7,8 @@ import { useFeed } from "@/hooks/useFeed";
 import { useToast } from "@/hooks/useToast";
 
 export function Feed({ pacienteId }: { pacienteId: string }) {
-  const { estado, curtir } = useFeed();
+  const { estado, curtir } = useFeed(pacienteId);
   const avisar = useToast();
-  const [curtidosPorMim, setCurtidosPorMim] = useState<Set<string>>(new Set());
-
-  const handleCurtir = (postId: string) => {
-    setCurtidosPorMim((s) => {
-      const n = new Set(s);
-      if (n.has(postId)) n.delete(postId);
-      else n.add(postId);
-      return n;
-    });
-    curtir(postId, pacienteId);
-  };
 
   return (
     <div className="scroll">
@@ -37,7 +25,7 @@ export function Feed({ pacienteId }: { pacienteId: string }) {
 
       {estado.status === "pronto" && (
         <div style={{ display: "grid", gap: 12 }}>
-          {estado.dado.map(({ post, curtidas }) => {
+          {estado.dado.map(({ post, curtidas, curtidoPorMim }) => {
             const cor = corPorId(post.corId);
             const autorRotulo = post.autorTipo === "nutricionista" ? "Nutri" : `Paciente ${post.autorApelido}`;
             const inicial = post.autorTipo === "nutricionista" ? "N" : (post.autorApelido ?? "?");
@@ -55,15 +43,16 @@ export function Feed({ pacienteId }: { pacienteId: string }) {
                 <h3 className="disp" style={{ fontSize: 19, fontWeight: 600, margin: "0 0 8px" }}>{post.titulo}</h3>
                 <p style={{ fontSize: 14.5, lineHeight: 1.6, color: "var(--ink-2)", margin: "0 0 14px" }}>{post.texto}</p>
                 <button
-                  type="button" onClick={() => handleCurtir(post.id)} className="chip"
+                  type="button" onClick={() => curtir(post.id)} className="chip"
+                  aria-pressed={curtidoPorMim}
                   style={{
                     fontSize: 13,
-                    background: curtidosPorMim.has(post.id) ? "var(--plum-wash)" : "transparent",
-                    borderColor: curtidosPorMim.has(post.id) ? "var(--plum-wash)" : "var(--line)",
-                    color: curtidosPorMim.has(post.id) ? "var(--plum)" : "var(--ink-2)",
+                    background: curtidoPorMim ? "var(--plum-wash)" : "transparent",
+                    borderColor: curtidoPorMim ? "var(--plum-wash)" : "var(--line)",
+                    color: curtidoPorMim ? "var(--plum)" : "var(--ink-2)",
                   }}
                 >
-                  {curtidosPorMim.has(post.id) ? "Curtido" : "Curtir"} · {curtidas}
+                  {curtidoPorMim ? "Curtido" : "Curtir"} · {curtidas}
                 </button>
               </article>
             );
