@@ -13,3 +13,4 @@ export * as preferenciasService from "./preferenciasService";
 export * as alimentoService from "./alimentoService";
 export * as alertaService from "./alertaService";
 export * as dashboardService from "./dashboardService";
+export * as authService from "./authService";
