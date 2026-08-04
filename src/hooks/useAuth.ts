@@ -9,6 +9,24 @@ import { idDoDispositivo } from "@/utils/deviceId";
  * depois que o MFA (quando exigido) é confirmado — até lá, `aguardandoMfa`
  * é true e nenhuma rota protegida deve considerar o usuário autenticado.
  */
+/**
+ * Só o encerrar sessão, para as telas que precisam do botão "Sair" sem
+ * montar o `useAuth` inteiro — o efeito de montagem dele refaz
+ * `sessaoAtual()` e poderia repor a sessão logo depois do logout.
+ */
+export function useSair() {
+  const definirSessao = useAuthStore((s) => s.definirSessao);
+  const definirAguardandoMfa = useAuthStore((s) => s.definirAguardandoMfa);
+  const definirSessaoPendente = useAuthStore((s) => s.definirSessaoPendente);
+
+  return useCallback(async () => {
+    await authService.logout();
+    definirSessao(null);
+    definirAguardandoMfa(false);
+    definirSessaoPendente(null);
+  }, [definirSessao, definirAguardandoMfa, definirSessaoPendente]);
+}
+
 export function useAuth() {
   const { sessao, carregando, erro, aguardandoMfa, sessaoPendente, definirSessao, definirCarregando, definirErro, definirAguardandoMfa, definirSessaoPendente } = useAuthStore();
 

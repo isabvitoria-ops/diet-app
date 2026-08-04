@@ -1,5 +1,5 @@
-import type { Paciente, ResumoAdesaoPaciente } from "@/types";
-import { agoraISO, atraso, db } from "./mockDb";
+import type { Paciente, ResumoAdesaoPaciente, UnidadeExibicao } from "@/types";
+import { agoraISO, atraso, db, gerarId } from "./mockDb";
 
 /**
  * Uma função por operação, como pede o briefing §8. Hoje lê/escreve em
@@ -19,6 +19,60 @@ export async function buscarPacientePorId(id: string): Promise<Paciente | null> 
 export async function listarResumosAdesao(): Promise<ResumoAdesaoPaciente[]> {
   await atraso();
   return db.resumosAdesao;
+}
+
+export interface DadosConvite {
+  nome: string;
+  email: string;
+  objetivo: string;
+  preferenciaUnidade: UnidadeExibicao;
+  pesoModoCego: boolean;
+}
+
+/**
+ * Próximo apelido livre do feed. É o número por trás do qual o paciente
+ * aparece para os outros (regra §13: ninguém tem nome nem foto no feed), então
+ * não pode repetir — dois "021" seriam duas pessoas diferentes com a mesma
+ * identidade pública.
+ */
+function proximoApelidoFeed(): string {
+  const usados = new Set(db.pacientes.map((p) => p.apelidoFeed));
+  const maior = db.pacientes.reduce((m, p) => Math.max(m, Number(p.apelidoFeed) || 0), 0);
+  let n = maior + 1;
+  while (usados.has(String(n).padStart(3, "0"))) n += 1;
+  return String(n).padStart(3, "0");
+}
+
+/**
+ * Regra #14: não existe cadastro público — a nutricionista convida. O
+ * paciente nasce ativo e sem nada liberado: os alimentos (regra #1) e os
+ * materiais são escolhas dela, feitas depois nas abas da ficha.
+ */
+export async function convidarPaciente(nutricionistaId: string, dados: DadosConvite): Promise<Paciente> {
+  await atraso(300);
+  const email = dados.email.trim().toLowerCase();
+  if (db.pacientes.some((p) => p.email.toLowerCase() === email)) {
+    throw new Error("Já existe uma paciente com este e-mail.");
+  }
+  const paciente: Paciente = {
+    id: gerarId("paciente"),
+    nutricionistaId,
+    criadoEm: agoraISO(),
+    atualizadoEm: agoraISO(),
+    nome: dados.nome.trim(),
+    apelidoFeed: proximoApelidoFeed(),
+    email,
+    objetivo: dados.objetivo.trim(),
+    ativo: true,
+    convidadoEm: agoraISO(),
+    ultimoLoginEm: null,
+    alimentosLiberadosCodigoTaco: [],
+    materiaisLiberadosId: [],
+    preferenciaUnidade: dados.preferenciaUnidade,
+    pesoModoCego: dados.pesoModoCego,
+  };
+  db.pacientes.push(paciente);
+  return paciente;
 }
 
 export async function atualizarPaciente(paciente: Paciente): Promise<Paciente> {

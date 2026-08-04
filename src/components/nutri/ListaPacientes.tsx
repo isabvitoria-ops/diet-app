@@ -1,10 +1,19 @@
+import { useState } from "react";
 import { Tag } from "@/components/ui/Tag";
 import { SkeletonCard, EstadoErro } from "@/components/ui/EstadoAsync";
 import { usePacientes } from "@/hooks/usePacientes";
 import { useToast } from "@/hooks/useToast";
+import { NovoPaciente } from "./NovoPaciente";
 
-export function ListaPacientes({ abrir }: { abrir: (pacienteId: string) => void }) {
-  const { estado, filtrados, busca, setBusca, incluirInativos, setIncluirInativos } = usePacientes();
+export function ListaPacientes({
+  nutricionistaId,
+  abrir,
+}: {
+  nutricionistaId: string;
+  abrir: (pacienteId: string) => void;
+}) {
+  const { estado, filtrados, busca, setBusca, incluirInativos, setIncluirInativos, recarregar } = usePacientes();
+  const [convidando, setConvidando] = useState(false);
   const avisar = useToast();
 
   if (estado.status === "carregando") {
@@ -50,7 +59,7 @@ export function ListaPacientes({ abrir }: { abrir: (pacienteId: string) => void 
       <div className="row" style={{ marginBottom: 14, flexWrap: "wrap" }}>
         <input className="input" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar paciente" style={{ flex: 1, minWidth: 180 }} />
         <button className={`chip ${incluirInativos ? "on" : ""}`} onClick={() => setIncluirInativos((v) => !v)}>Mostrar inativos</button>
-        <button className="btn" onClick={() => avisar("Formulário de cadastro abriria aqui.")}>Novo paciente</button>
+        <button className="btn" onClick={() => setConvidando(true)}>Novo paciente</button>
       </div>
 
       <div className="grid2">
@@ -96,6 +105,21 @@ export function ListaPacientes({ abrir }: { abrir: (pacienteId: string) => void 
             </button>
           )}
         </div>
+      )}
+
+      {convidando && (
+        <NovoPaciente
+          nutricionistaId={nutricionistaId}
+          onFechar={() => setConvidando(false)}
+          onCriado={(paciente) => {
+            setConvidando(false);
+            // Limpa a busca: com um filtro ativo a recém-convidada podia
+            // entrar na lista e ficar escondida atrás dele.
+            setBusca("");
+            recarregar();
+            avisar(`Convite enviado para ${paciente.nome.split(" ")[0]}. Ela aparece como ${paciente.apelidoFeed} no feed.`);
+          }}
+        />
       )}
     </div>
   );

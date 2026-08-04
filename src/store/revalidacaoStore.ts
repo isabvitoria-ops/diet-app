@@ -36,4 +36,6 @@ export const chaves = {
   sessoesFoto: (pacienteId: string) => `sessoesFoto:${pacienteId}`,
   diario: (pacienteId: string) => `diario:${pacienteId}`,
   checkin: (pacienteId: string) => `checkin:${pacienteId}`,
+  /** Lista de pacientes — a ListaPacientes e o contador "N ATIVOS" do topo leem a mesma coisa por hooks separados. */
+  pacientes: () => "pacientes",
 };
