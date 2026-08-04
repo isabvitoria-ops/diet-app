@@ -131,7 +131,7 @@ export function Plano({ pacienteId }: { pacienteId: string }) {
                   })}
 
                   {r.regraVegetais?.ativa && (
-                    <div style={{ marginTop: 14, padding: 13, borderRadius: 12, background: "var(--sage)22", fontSize: 13.5, color: "var(--ink)", lineHeight: 1.5 }}>
+                    <div style={{ marginTop: 14, padding: 13, borderRadius: 12, background: "rgba(106, 149, 108, 0.13)", fontSize: 13.5, color: "var(--ink)", lineHeight: 1.5 }}>
                       Vegetais à vontade{r.regraVegetais.minimoGramas ? `, mínimo ${r.regraVegetais.minimoGramas} g` : ""}:{" "}
                       {r.regraVegetais.itensLiberados.map((v) => v.nomeExibicao).join(", ")}
                     </div>

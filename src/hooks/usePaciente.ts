@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Estado, Paciente } from "@/types";
 import { pacienteService } from "@/services";
 import { useAsync } from "./useAsync";
@@ -6,6 +6,10 @@ import { useAsync } from "./useAsync";
 export function usePaciente(pacienteId: string) {
   const [estadoServidor, recarregar] = useAsync(() => pacienteService.buscarPacientePorId(pacienteId), [pacienteId]);
   const [override, setOverride] = useState<Paciente | null>(null);
+
+  useEffect(() => {
+    setOverride(null);
+  }, [pacienteId]);
 
   const estado: Estado<Paciente | null> = useMemo(() => {
     if (override) return { status: "pronto", dado: override };

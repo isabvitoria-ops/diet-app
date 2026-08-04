@@ -13,10 +13,13 @@ interface AuthState {
   erro: string | null;
   /** true entre "login e senha corretos" e "MFA confirmado" — só se aplica à nutricionista em dispositivo novo. */
   aguardandoMfa: boolean;
+  /** Sessão em espera de confirmação de MFA — compartilhada entre componentes de Login e Mfa. */
+  sessaoPendente: Sessao | null;
   definirSessao: (sessao: Sessao | null) => void;
   definirCarregando: (carregando: boolean) => void;
   definirErro: (erro: string | null) => void;
   definirAguardandoMfa: (aguardando: boolean) => void;
+  definirSessaoPendente: (sessao: Sessao | null) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -24,8 +27,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   carregando: true,
   erro: null,
   aguardandoMfa: false,
+  sessaoPendente: null,
   definirSessao: (sessao) => set({ sessao, erro: null }),
   definirCarregando: (carregando) => set({ carregando }),
   definirErro: (erro) => set({ erro }),
   definirAguardandoMfa: (aguardandoMfa) => set({ aguardandoMfa }),
+  definirSessaoPendente: (sessaoPendente) => set({ sessaoPendente }),
 }));

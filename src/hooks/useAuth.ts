@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect } from "react";
 import type { Sessao } from "@/types";
 import { useAuthStore } from "@/store/authStore";
 import { authService, mfaService } from "@/services";
@@ -11,8 +11,7 @@ import { idDoDispositivo } from "@/utils/deviceId";
  * é true e nenhuma rota protegida deve considerar o usuário autenticado.
  */
 export function useAuth() {
-  const { sessao, carregando, erro, aguardandoMfa, definirSessao, definirCarregando, definirErro, definirAguardandoMfa } = useAuthStore();
-  const sessaoPendenteRef = useRef<Sessao | null>(null);
+  const { sessao, carregando, erro, aguardandoMfa, sessaoPendente, definirSessao, definirCarregando, definirErro, definirAguardandoMfa, definirSessaoPendente } = useAuthStore();
 
   useEffect(() => {
     let ativo = true;
@@ -23,7 +22,7 @@ export function useAuth() {
         const precisa = await mfaService.precisaMfa(idDoDispositivo());
         if (!ativo) return;
         if (precisa) {
-          sessaoPendenteRef.current = s;
+          definirSessaoPendente(s);
           definirAguardandoMfa(true);
           definirCarregando(false);
           return;
@@ -45,7 +44,7 @@ export function useAuth() {
       if (s.papel === "nutricionista") {
         const precisa = await mfaService.precisaMfa(idDoDispositivo());
         if (precisa) {
-          sessaoPendenteRef.current = s;
+          definirSessaoPendente(s);
           definirAguardandoMfa(true);
           return s;
         }
@@ -53,7 +52,7 @@ export function useAuth() {
       definirSessao(s);
       return s;
     },
-    [definirErro, definirAguardandoMfa, definirSessao],
+    [definirErro, definirAguardandoMfa, definirSessao, definirSessaoPendente],
   );
 
   const confirmarMfa = useCallback(
@@ -61,21 +60,21 @@ export function useAuth() {
       const ok = await mfaService.verificarCodigo(codigo);
       if (!ok) throw new Error("Código inválido. Confira os 6 dígitos e tente de novo.");
       if (confiarNesteDispositivo) await mfaService.confiarDispositivo(idDoDispositivo());
-      if (sessaoPendenteRef.current) {
-        definirSessao(sessaoPendenteRef.current);
-        sessaoPendenteRef.current = null;
+      if (sessaoPendente) {
+        definirSessao(sessaoPendente);
+        definirSessaoPendente(null);
       }
       definirAguardandoMfa(false);
     },
-    [definirSessao, definirAguardandoMfa],
+    [sessaoPendente, definirSessao, definirAguardandoMfa, definirSessaoPendente],
   );
 
   const sair = useCallback(async () => {
     await authService.logout();
     definirSessao(null);
     definirAguardandoMfa(false);
-    sessaoPendenteRef.current = null;
-  }, [definirSessao, definirAguardandoMfa]);
+    definirSessaoPendente(null);
+  }, [definirSessao, definirAguardandoMfa, definirSessaoPendente]);
 
   return { sessao, carregando, erro, aguardandoMfa, entrar, confirmarMfa, sair };
 }
