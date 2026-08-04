@@ -128,6 +128,8 @@ export interface RefeicaoRascunho {
   opcoes: OpcaoRascunho[];
   observacao?: string;
   regraVegetaisAtiva: boolean;
+  /** O "mínimo 100g" de uma linha `VEGETAIS mínimo 100g` — vira `RegraVegetais.minimoGramas`. */
+  vegetaisMinimoGramas?: number;
 }
 
 /**

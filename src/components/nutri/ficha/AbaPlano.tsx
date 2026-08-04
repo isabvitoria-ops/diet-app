@@ -25,10 +25,23 @@ function ItemPreview({
       <div style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 14 }}>
         <span style={{ color: alimento ? (sub ? "var(--ink-2)" : "var(--ink)") : "var(--clay)" }}>
           {sub && <span style={{ color: "var(--ink-3)" }}>ou </span>}
-          {alimento ? alimento.nome : item.escrito}
+          {/*
+            O que a paciente lê é o texto da nutricionista — o plano publica
+            `escrito` como `nomeExibicao`. Mostrar aqui o nome da TACO fazia
+            este bloco, que se anuncia como "o que o paciente vai ver",
+            exibir a redação da base: ela escrevia "Patinho grelhado" e a
+            prévia respondia "Carne, bovina, patinho, sem gordura, grelhado".
+          */}
+          {item.escrito}
         </span>
         <span className="mono" style={{ fontSize: 13, color: "var(--plum)", flexShrink: 0 }}>{textoQuantidade(item.quantidade)}</span>
       </div>
+      {/* O vínculo continua à vista, como conferência — só não se passa pelo texto da tela dela. */}
+      {alimento && alimento.nome.toLowerCase() !== item.escrito.toLowerCase() && (
+        <div className="mono" style={{ fontSize: 10.5, color: "var(--ink-3)", marginTop: 3 }}>
+          ↳ {alimento.nome.toUpperCase()}
+        </div>
+      )}
       {!alimento && (
         <div style={{ marginTop: 6 }}>
           <div style={{ fontSize: 12.5, color: "var(--clay)", marginBottom: 6 }}>"{item.escrito}" — escolha na base:</div>
@@ -112,6 +125,19 @@ export function AbaPlano({ nutricionistaId }: { nutricionistaId: string }) {
   const itens = useMemo(() => (refeicoes ? todosOsItensRascunho(refeicoes) : []), [refeicoes]);
   const pendentes = itens.filter((i) => !i.alimentoCodigoTaco).length;
 
+  /**
+   * Os vegetais que a regra livre libera são os que já estão liberados para
+   * esta paciente (regra #1: só existe para ela o que a nutricionista soltou).
+   */
+  const vegetaisLiberados = useMemo(
+    () =>
+      paciente.alimentosLiberadosCodigoTaco
+        .map((codigo) => alimentosPorCodigo.get(codigo))
+        .filter((a): a is Alimento => !!a && a.grupo === "vegetal")
+        .map((a) => ({ alimentoCodigoTaco: a.codigoTaco, nomeExibicao: a.nome })),
+    [paciente.alimentosLiberadosCodigoTaco, alimentosPorCodigo],
+  );
+
   const publicar = async () => {
     if (!refeicoes || pendentes > 0) return;
     setPublicando(true);
@@ -124,7 +150,17 @@ export function AbaPlano({ nutricionistaId }: { nutricionistaId: string }) {
         corId: ["plum", "sage", "gold", "clay", "plum-2"][ri % 5]!,
         ordem: ri,
         observacao: r.observacao,
-        regraVegetais: r.regraVegetaisAtiva ? { ativa: true, itensLiberados: [] } : undefined,
+        // O "mínimo 100g" da linha VEGETAIS é prescrição e vem junto. Os
+        // itens liberados são os vegetais que já estão liberados para esta
+        // paciente (regra #1) — publicar a lista vazia fazia a tela dela
+        // dizer "Vegetais à vontade:" e terminar em nada.
+        regraVegetais: r.regraVegetaisAtiva
+          ? {
+              ativa: true,
+              minimoGramas: r.vegetaisMinimoGramas,
+              itensLiberados: vegetaisLiberados,
+            }
+          : undefined,
         opcoes: r.opcoes.map((o, oi) => ({
           id: `opcao-${paciente.id}-${ri}-${oi}`,
           refeicaoId: `refeicao-${paciente.id}-${ri}`,
@@ -133,7 +169,11 @@ export function AbaPlano({ nutricionistaId }: { nutricionistaId: string }) {
           itens: o.itens.map((it, ii) => ({
             id: `item-${paciente.id}-${ri}-${oi}-${ii}`,
             opcaoId: `opcao-${paciente.id}-${ri}-${oi}`,
-            slot: it.escrito,
+            // `slot` é o papel do item ("Carboidrato", "Proteína"), não o
+            // alimento. O texto colado não traz essa informação, e repetir
+            // ali o nome fazia a tela da paciente imprimir "PÃO DE FORMA"
+            // como rótulo e "Pão de forma" logo abaixo.
+            slot: "",
             ordem: ii,
             alimentoCodigoTaco: it.alimentoCodigoTaco,
             // O que a nutricionista escreveu manda no que o paciente lê. O

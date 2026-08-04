@@ -112,7 +112,8 @@ export function Plano({ pacienteId, preferenciaUnidade }: { pacienteId: string; 
                     const podeTrocar = it.substituicoes.length > 0;
                     return (
                       <div key={it.id} style={{ padding: "12px 0", borderTop: i ? "1px solid var(--line)" : "0" }}>
-                        <div className="eyebrow" style={{ marginBottom: 5 }}>{it.slot}</div>
+                        {/* Plano importado de texto não traz o papel do item; sem rótulo, nada de eyebrow vazia. */}
+                        {it.slot && <div className="eyebrow" style={{ marginBottom: 5 }}>{it.slot}</div>}
                         <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                           <button
                             onClick={() => atual.alimentoCodigoTaco && abrirFicha(atual.alimentoCodigoTaco, atual.nomeExibicao)}

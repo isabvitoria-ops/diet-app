@@ -80,6 +80,10 @@ export function parsearTextoDePlano(texto: string): RefeicaoRascunho[] {
       ultimoItem = novoItem;
     } else if (vegetais && refeicaoAtual) {
       refeicaoAtual.regraVegetaisAtiva = true;
+      // "VEGETAIS mínimo 100g" — o número fazia parte da prescrição e estava
+      // sendo descartado, então a paciente lia só "Vegetais à vontade".
+      const minimo = linha.match(/(\d+)\s*g/i);
+      if (minimo) refeicaoAtual.vegetaisMinimoGramas = Number(minimo[1]);
       ultimoItem = null;
     }
   });
