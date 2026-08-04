@@ -36,10 +36,36 @@ export interface ResultadoBusca {
 }
 
 /**
+ * Prefixo curto demais junta palavras que não têm nada a ver: com 3 letras,
+ * "sal" (de "Manteiga, com sal") casava o núcleo "salada". Exigir 4 ainda
+ * cobre plural e flexão ("cozida"/"cozido", "grelhado"/"grelhada").
+ */
+const MIN_PREFIXO = 4;
+
+function casa(token: string, tokensDoNome: string[]): boolean {
+  return tokensDoNome.some(
+    (x) =>
+      x === token ||
+      (x.startsWith(token) && token.length >= MIN_PREFIXO) ||
+      (token.startsWith(x) && x.length >= MIN_PREFIXO),
+  );
+}
+
+/**
  * Busca por sobreposição de palavras — aguenta "arroz branco cozido" virar
- * "Arroz, tipo 1, cozido". Portada literalmente do protótipo do painel
- * (função `buscar`), só parametrizada para receber a base em vez de usar
- * uma constante global.
+ * "Arroz, tipo 1, cozido". Portada do protótipo do painel (função `buscar`),
+ * parametrizada para receber a base em vez de usar uma constante global.
+ *
+ * Ao contrário do protótipo, um candidato só entra se o **substantivo-núcleo**
+ * da consulta aparecer nele. Tanto o nome da TACO ("Atum, conserva em óleo")
+ * quanto o que a nutricionista escreve ("Atum enlatado") começam pelo
+ * alimento e seguem com qualificadores, então casar só um qualificador não
+ * diz nada: por pontuação bruta, "Atum enlatado"→"Atum, conserva em óleo"
+ * (casou "atum") e "Peixe branco"→"Repolho, branco, cru" (casou "branco")
+ * empatavam em 1,85. O primeiro é o acerto que ela quer; o segundo era a
+ * *única* opção oferecida para peixe — um toque distraído mandava a ficha de
+ * repolho para a paciente. Sem núcleo em comum é melhor não sugerir nada: a
+ * tela já diz "Nada parecido na TACO. Corrija o nome ou cadastre o alimento."
  */
 export function buscarAlimentos(
   base: Alimento[],
@@ -49,6 +75,7 @@ export function buscarAlimentos(
 ): ResultadoBusca[] {
   const tq = tokens(consulta);
   if (!tq.length) return [];
+  const nucleo = tq[0]!;
   return base
     .filter((a) => !grupo || a.grupo === grupo)
     .map((a) => {
@@ -58,11 +85,15 @@ export function buscarAlimentos(
         if (tn.includes(t)) pontos += 2;
         else if (tn.some((x) => x.startsWith(t) || t.startsWith(x))) pontos += 1;
       });
-      return { alimento: a, pontos: pontos - Math.abs(tn.length - tq.length) * 0.15 };
+      // Empurra para cima quem também tem o núcleo na frente ("Atum, ..."
+      // ganha de "Salada de atum" para a consulta "Atum enlatado").
+      if (tn[0] === nucleo) pontos += 0.5;
+      return { alimento: a, pontos: pontos - Math.abs(tn.length - tq.length) * 0.15, temNucleo: casa(nucleo, tn) };
     })
-    .filter((x) => x.pontos > 0)
+    .filter((x) => x.temNucleo && x.pontos > 0)
     .sort((a, b) => b.pontos - a.pontos)
-    .slice(0, limite);
+    .slice(0, limite)
+    .map(({ alimento, pontos }) => ({ alimento, pontos }));
 }
 
 export function tokensDe(s: string): string[] {

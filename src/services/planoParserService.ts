@@ -109,7 +109,7 @@ ALMOÇO 12:30
   ou Batata inglesa cozida: 200g
   ou Mandioca cozida: 120g
 - Peito de frango grelhado: 100g
-  ou Peixe branco: 120g
+  ou Merluza filé assado: 120g
   ou Patinho grelhado: 90g
 VEGETAIS mínimo 100g
 
