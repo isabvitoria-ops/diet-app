@@ -54,7 +54,13 @@ export function Plano({ pacienteId, preferenciaUnidade }: { pacienteId: string; 
   return (
     <div className="scroll">
       <section style={{ paddingTop: 4 }}>
-        <Eyebrow>{plano.faseRotulo ?? "Seu plano"}</Eyebrow>
+        {/*
+          O rótulo de fase ("Fase 1 · restrição · dia 12 de 28") saía aqui
+          sozinho, em cima do cardápio. Vocabulário de protocolo não é
+          decisão do app: se a nutricionista quiser dizer em que ponto a
+          paciente está, ela escreve no campo de observação da versão.
+        */}
+        <Eyebrow>Seu plano</Eyebrow>
         <h1 className="disp" style={{ fontSize: 30, fontWeight: 600, margin: "10px 0 8px" }}>Seu plano de hoje</h1>
         <p style={{ fontSize: 14, color: "var(--ink-2)", margin: "0 0 18px", lineHeight: 1.5 }}>
           Toque em qualquer alimento para entender por que ele está aqui. Onde aparecer "Trocar", você pode escolher outra opção equivalente.

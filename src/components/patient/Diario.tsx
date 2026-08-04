@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Eyebrow, Card } from "@/components/ui/Card";
 import { Btn } from "@/components/ui/Button";
-import { Chip } from "@/components/ui/Chip";
 import { Sheet } from "@/components/ui/Sheet";
 import { SkeletonCard, EstadoErro, EstadoVazio } from "@/components/ui/EstadoAsync";
 import { OPCOES_ADESAO } from "@/constants/adesao";
@@ -16,8 +15,30 @@ export function Diario({ pacienteId, nutricionistaId }: { pacienteId: string; nu
   const [editando, setEditando] = useState<Refeicao | null>(null);
   const [adesao, setAdesao] = useState<AdesaoId | null>(null);
   const [nota, setNota] = useState("");
-  const [foto, setFoto] = useState(false);
+  /** A foto do prato, já como data URL — é o que fica no registro. */
+  const [foto, setFoto] = useState<string | null>(null);
+  const [erroFoto, setErroFoto] = useState<string | null>(null);
+  const seletorFoto = useRef<HTMLInputElement>(null);
   const avisar = useToast();
+
+  const LIMITE_FOTO_MB = 8;
+
+  const escolherFoto = (arquivo: File | undefined) => {
+    if (!arquivo) return;
+    setErroFoto(null);
+    if (!arquivo.type.startsWith("image/")) {
+      setErroFoto("Esse arquivo não é uma imagem. Escolha uma foto.");
+      return;
+    }
+    if (arquivo.size > LIMITE_FOTO_MB * 1024 * 1024) {
+      setErroFoto(`Essa foto tem mais de ${LIMITE_FOTO_MB} MB. Tente outra.`);
+      return;
+    }
+    const leitor = new FileReader();
+    leitor.onload = () => setFoto(typeof leitor.result === "string" ? leitor.result : null);
+    leitor.onerror = () => setErroFoto("Não foi possível ler a foto. Tente de novo.");
+    leitor.readAsDataURL(arquivo);
+  };
 
   if (estadoPlano.status === "carregando" || estadoDiario.status === "carregando") {
     return (
@@ -48,13 +69,14 @@ export function Diario({ pacienteId, nutricionistaId }: { pacienteId: string; nu
     const existente = registroPorRefeicao(r.id);
     setAdesao(existente?.adesao ?? null);
     setNota(existente?.nota ?? "");
-    setFoto(!!existente?.fotoUrl);
+    setFoto(existente?.fotoUrl ?? null);
+    setErroFoto(null);
     setEditando(r);
   };
 
   const salvar = async () => {
     if (!editando || !adesao) return;
-    await registrar(nutricionistaId, editando.id, adesao, nota || undefined, foto ? "foto-anexada" : undefined);
+    await registrar(nutricionistaId, editando.id, adesao, nota || undefined, foto ?? undefined);
     setEditando(null);
     avisar("Registro salvo.");
   };
@@ -98,7 +120,12 @@ export function Diario({ pacienteId, nutricionistaId }: { pacienteId: string; nu
                 <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--line)" }}>
                   <div style={{ fontSize: 14.5, fontWeight: 600, color: a.cor }}>{a.label}</div>
                   {registro.nota && <div style={{ fontSize: 13.5, color: "var(--ink-2)", marginTop: 5, lineHeight: 1.5 }}>{registro.nota}</div>}
-                  {registro.fotoUrl && <div className="mono" style={{ fontSize: 11.5, color: "var(--ink-3)", marginTop: 7 }}>1 FOTO ANEXADA</div>}
+                  {registro.fotoUrl && (
+                    <img
+                      src={registro.fotoUrl} alt={`Foto do prato de ${r.nome.toLowerCase()}`}
+                      style={{ width: "100%", maxHeight: 160, objectFit: "cover", borderRadius: 12, marginTop: 9, display: "block" }}
+                    />
+                  )}
                 </div>
               )}
             </button>
@@ -142,9 +169,47 @@ export function Diario({ pacienteId, nutricionistaId }: { pacienteId: string; nu
             placeholder="Ex.: almocei fora, comi pão e um pouco de molho branco" style={{ width: "100%", margin: "10px 0 14px" }}
           />
 
-          <Chip ativo={foto} onClick={() => setFoto((f) => !f)} style={{ width: "100%", padding: 14, fontSize: 14.5 }}>
-            {foto ? "Foto anexada · toque para remover" : "Anexar foto do prato"}
-          </Chip>
+          {/*
+            Antes isto era um interruptor: alternava um booleano e gravava a
+            string "foto-anexada". Nenhuma foto saía do aparelho e não havia
+            o que a nutricionista pudesse olhar depois.
+          */}
+          <Eyebrow>Foto do prato (opcional)</Eyebrow>
+          <input
+            ref={seletorFoto} type="file" accept="image/*" capture="environment"
+            onChange={(e) => { escolherFoto(e.target.files?.[0]); e.target.value = ""; }}
+            style={{ display: "none" }}
+          />
+          {foto ? (
+            <div style={{ marginTop: 10 }}>
+              <img
+                src={foto} alt="Foto do prato que você anexou"
+                style={{ width: "100%", maxHeight: 220, objectFit: "cover", borderRadius: 14, display: "block" }}
+              />
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button
+                  type="button" className="chip" style={{ flex: 1, padding: 11, fontSize: 13.5 }}
+                  onClick={() => seletorFoto.current?.click()}
+                >
+                  Trocar foto
+                </button>
+                <button
+                  type="button" className="chip" style={{ flex: 1, padding: 11, fontSize: 13.5, color: "var(--clay)", borderColor: "var(--clay)" }}
+                  onClick={() => setFoto(null)}
+                >
+                  Remover
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button" className="chip" onClick={() => seletorFoto.current?.click()}
+              style={{ width: "100%", padding: 14, fontSize: 14.5, marginTop: 10 }}
+            >
+              Anexar foto do prato
+            </button>
+          )}
+          {erroFoto && <div role="alert" style={{ fontSize: 13, color: "var(--clay)", marginTop: 8 }}>{erroFoto}</div>}
 
           <div style={{ display: "flex", gap: 10, marginTop: 22 }}>
             <Btn variante="ghost" style={{ flex: "0 0 100px" }} onClick={() => setEditando(null)}>Cancelar</Btn>
