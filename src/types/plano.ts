@@ -112,6 +112,22 @@ export interface PlanoRascunhoItem {
   quantidade: Quantidade;
   alimentoCodigoTaco: number | null;
   sugestoesCodigoTaco: number[];
+  /** Substituições ("ou ...") coladas logo abaixo do item — mesmo formato, sem aninhar mais um nível. */
+  substituicoes: PlanoRascunhoItem[];
+}
+
+export interface OpcaoRascunho {
+  /** Rótulo da aba ("OPÇÃO Hambúrguer") — vazio quando a refeição tem opção única. */
+  nome?: string;
+  itens: PlanoRascunhoItem[];
+}
+
+export interface RefeicaoRascunho {
+  nome: string;
+  horario: string;
+  opcoes: OpcaoRascunho[];
+  observacao?: string;
+  regraVegetaisAtiva: boolean;
 }
 
 /**
@@ -125,6 +141,8 @@ export interface PlanoRascunhoItem {
  */
 export interface ItemMontador {
   alimentoCodigoTaco: number;
+  /** Nome que o paciente vê — igual ao padrão de `ItemPlano.nomeExibicao`, nunca lido da base TACO na tela do paciente (regra #2). */
+  nomeExibicao: string;
   grupo: string;
   /** Ausente quando `livre` (regra livre de vegetais) ou `bloqueado`. */
   quantidadeBase?: Quantidade;

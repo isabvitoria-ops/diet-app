@@ -33,4 +33,6 @@ export interface RespostaQuestionario extends RegistroDominio {
   templateVersao: number;
   respondidoEm: ISODateString;
   respostas: Record<ID, string | number | string[]>;
+  /** Alimenta o dashboard (briefing §15 · "Questionários respondidos aguardando leitura"). */
+  lidaPelaNutricionistaEm: ISODateString | null;
 }
