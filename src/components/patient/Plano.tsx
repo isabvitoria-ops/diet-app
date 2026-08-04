@@ -73,17 +73,19 @@ export function Plano({ pacienteId }: { pacienteId: string }) {
             <div key={r.id} className="card" style={{ padding: on ? 18 : "16px 18px", borderLeft: `3px solid ${cor}` }}>
               <button
                 onClick={() => setRefeicaoAberta(on ? null : r.id)}
+                aria-expanded={on}
+                aria-controls={`refeicao-conteudo-${r.id}`}
                 style={{ width: "100%", background: "none", border: 0, padding: 0, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", textAlign: "left" }}
               >
                 <div>
                   <div className="mono" style={{ fontSize: 11.5, color: "var(--ink-3)" }}>{r.horario}</div>
                   <div className="disp" style={{ fontSize: 20, fontWeight: 600, marginTop: 2 }}>{r.nome}</div>
                 </div>
-                <span style={{ fontSize: 20, color: "var(--ink-3)", transform: on ? "rotate(45deg)" : "none", transition: "transform .2s", lineHeight: 1 }}>+</span>
+                <span aria-hidden="true" style={{ fontSize: 20, color: "var(--ink-3)", transform: on ? "rotate(45deg)" : "none", transition: "transform .2s", lineHeight: 1 }}>+</span>
               </button>
 
               {on && (
-                <div style={{ marginTop: 16 }}>
+                <div id={`refeicao-conteudo-${r.id}`} style={{ marginTop: 16 }}>
                   {temAbas && (
                     <div style={{ display: "flex", gap: 7, marginBottom: 14, flexWrap: "wrap" }}>
                       {r.opcoes.map((o) => (
