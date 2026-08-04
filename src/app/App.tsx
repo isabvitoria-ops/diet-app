@@ -1,4 +1,4 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, type ComponentType, type ReactNode } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import "@/styles/global.css";
 import { useAuth } from "@/hooks/useAuth";
@@ -28,8 +28,12 @@ function Carregando() {
  * Single-tenant (briefing §3, §21): hoje só existe uma nutricionista, então
  * o app do paciente aponta direto para `NUTRICIONISTA_ID` em vez de
  * resolver dinamicamente — isso muda no dia em que houver mais de uma conta.
+ *
+ * `Roteador` existe só para o build de demonstração (um HTML único, sem
+ * servidor que responda /paciente numa recarga) poder passar `HashRouter`.
+ * Em produção fica o padrão, `BrowserRouter`.
  */
-export function App() {
+export function App({ Roteador = BrowserRouter }: { Roteador?: ComponentType<{ children: ReactNode }> }) {
   const { sessao, carregando, aguardandoMfa } = useAuth();
 
   if (carregando) return <Carregando />;
@@ -37,7 +41,7 @@ export function App() {
   if (!sessao) return <Login />;
 
   return (
-    <BrowserRouter>
+    <Roteador>
       <Suspense fallback={<Carregando />}>
         <Routes>
           {sessao.papel === "paciente" && (
@@ -54,6 +58,6 @@ export function App() {
           )}
         </Routes>
       </Suspense>
-    </BrowserRouter>
+    </Roteador>
   );
 }
