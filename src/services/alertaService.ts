@@ -1,4 +1,4 @@
-import type { CheckIn, OrigemAlerta } from "@/types";
+import type { CheckIn, CheckInRascunho, OrigemAlerta } from "@/types";
 import { alertaRepository } from "@/repositories";
 
 /**
@@ -8,7 +8,7 @@ import { alertaRepository } from "@/repositories";
  * salvo (a UI decide a mensagem, este serviço só decide se dispara).
  */
 export function avaliarOrigensDeAlerta(
-  checkinNovo: Pick<CheckIn, "flags" | "sintomas">,
+  checkinNovo: CheckInRascunho,
   historicoRecente: CheckIn[],
 ): OrigemAlerta[] {
   const origens: OrigemAlerta[] = [];

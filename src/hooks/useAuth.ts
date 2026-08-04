@@ -1,5 +1,4 @@
 import { useCallback, useEffect } from "react";
-import type { Sessao } from "@/types";
 import { useAuthStore } from "@/store/authStore";
 import { authService, mfaService } from "@/services";
 import { idDoDispositivo } from "@/utils/deviceId";
