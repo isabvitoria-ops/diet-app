@@ -16,3 +16,4 @@ export * as alertaService from "./alertaService";
 export * as dashboardService from "./dashboardService";
 export * as authService from "./authService";
 export * as mfaService from "./mfaService";
+export * as demonstracaoService from "./demonstracaoService";

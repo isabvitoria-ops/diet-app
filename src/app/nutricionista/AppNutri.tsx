@@ -9,6 +9,7 @@ import { PainelBiblioteca } from "@/components/nutri/PainelBiblioteca";
 import { FichaPaciente } from "@/components/nutri/ficha/FichaPaciente";
 import { useContagemAtivos } from "@/hooks/usePacientes";
 import { useSair } from "@/hooks/useAuth";
+import { demonstracaoService } from "@/services";
 
 type Secao = "dashboard" | "pacientes" | "base" | "feed" | "biblioteca";
 const SECOES: [Secao, string][] = [
@@ -19,8 +20,18 @@ export function AppNutri({ nutricionistaId }: { nutricionistaId: string }) {
   const [secao, setSecao] = useState<Secao>("dashboard");
   const [abertoId, setAbertoId] = useState<string | null>(null);
   const [confirmandoSaida, setConfirmandoSaida] = useState(false);
+  const [confirmandoReinicio, setConfirmandoReinicio] = useState(false);
+  const [reiniciando, setReiniciando] = useState(false);
   const ativos = useContagemAtivos();
   const sair = useSair();
+
+  const reiniciarDemo = async () => {
+    setReiniciando(true);
+    await demonstracaoService.reiniciarDemonstracao();
+    // As telas guardam o que já buscaram em estado do React, que o reset não
+    // alcança — recarregar é o jeito honesto de voltar tudo ao início.
+    window.location.reload();
+  };
 
   const irPara = (s: Secao) => {
     setSecao(s);
@@ -49,6 +60,17 @@ export function AppNutri({ nutricionistaId }: { nutricionistaId: string }) {
           >
             Sair
           </button>
+          {/*
+            Afordância da demonstração, não do produto — daí o tratamento
+            apagado, separado dos controles de verdade.
+          */}
+          <button
+            onClick={() => setConfirmandoReinicio(true)}
+            title="Apaga tudo o que foi feito nesta demonstração e volta aos dados iniciais"
+            style={{ marginLeft: 8, background: "none", border: 0, padding: "6px 4px", color: "var(--ink-3)", fontSize: 11, fontFamily: "'IBM Plex Mono',monospace", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}
+          >
+            reiniciar demo
+          </button>
         </div>
       </nav>
 
@@ -65,6 +87,29 @@ export function AppNutri({ nutricionistaId }: { nutricionistaId: string }) {
             <div className="row">
               <button className="btn danger" onClick={() => void sair()}>Sair</button>
               <button className="btn ghost" onClick={() => setConfirmandoSaida(false)}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmandoReinicio && (
+        <div
+          onClick={(e) => e.target === e.currentTarget && !reiniciando && setConfirmandoReinicio(false)}
+          style={{ position: "fixed", inset: 0, zIndex: 60, background: "rgba(26,22,25,.45)", display: "grid", placeItems: "center", padding: 18 }}
+        >
+          <div role="dialog" aria-modal="true" aria-labelledby="titulo-reiniciar" className="card" style={{ width: "100%", maxWidth: 430, padding: 24 }}>
+            <h2 id="titulo-reiniciar" className="disp" style={{ fontSize: 21, fontWeight: 600, margin: "0 0 8px" }}>Reiniciar a demonstração?</h2>
+            <p style={{ fontSize: 14, color: "var(--ink-2)", margin: "0 0 8px", lineHeight: 1.5 }}>
+              Apaga tudo o que foi feito aqui — planos publicados, pacientes convidadas, check-ins, fotos, posts e mensagens — e devolve os dados de exemplo do início.
+            </p>
+            <p style={{ fontSize: 13.5, color: "var(--ink-3)", margin: "0 0 20px", lineHeight: 1.5 }}>
+              Você sai da conta e o código de verificação volta a ser pedido. Não tem como desfazer.
+            </p>
+            <div className="row">
+              <button className="btn danger" onClick={() => void reiniciarDemo()} disabled={reiniciando}>
+                {reiniciando ? "Reiniciando…" : "Apagar e recomeçar"}
+              </button>
+              <button className="btn ghost" onClick={() => setConfirmandoReinicio(false)} disabled={reiniciando}>Cancelar</button>
             </div>
           </div>
         </div>

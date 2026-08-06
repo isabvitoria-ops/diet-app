@@ -54,6 +54,16 @@ export async function dispositivoEhConfiavel(deviceId: string): Promise<boolean>
   return new Date(entrada.confiadoAte).getTime() > Date.now();
 }
 
+/** Esquece todos os dispositivos confiáveis — usado ao reiniciar a demonstração, para o MFA voltar a ser pedido. */
+export async function esquecerDispositivos(): Promise<void> {
+  db.nutricionista.dispositivosConfiaveis = [];
+  try {
+    localStorage.removeItem(CHAVE_ARMAZENAMENTO);
+  } catch {
+    // sem localStorage: a limpeza em memória acima já basta
+  }
+}
+
 export async function confiarDispositivo(deviceId: string): Promise<void> {
   await atraso(150);
   const confiadoAte = new Date(Date.now() + DIAS_CONFIANCA * 24 * 60 * 60 * 1000).toISOString();
