@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { Alimento } from "@/central/types";
-import { catalogo } from "@/central/data/catalogo";
+import { catalogo } from "@/central/dados/catalogo";
 import { calcularTroca, destinosPossiveis, origensPossiveis } from "@/central/utils/calculoTroca";
 import { rotuloUnidade, unidadesDoAlimento } from "@/central/utils/medidas";
 import { numero } from "@/central/utils/texto";

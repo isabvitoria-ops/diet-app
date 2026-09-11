@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import type { NivelEscolha } from "@/central/types";
-import { catalogo } from "@/central/data/catalogo";
+import { catalogo } from "@/central/dados/catalogo";
 import { CabecalhoPagina } from "@/central/components/CabecalhoPagina";
 import { CartaoOpcao } from "@/central/components/CartaoOpcao";
 import { EstadoVazio } from "@/central/components/EstadoVazio";

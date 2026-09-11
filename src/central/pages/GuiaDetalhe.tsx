@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { catalogo } from "@/central/data/catalogo";
+import { catalogo } from "@/central/dados/catalogo";
 import { CabecalhoPagina } from "@/central/components/CabecalhoPagina";
 import { EstadoVazio } from "@/central/components/EstadoVazio";
 import { BotaoFavorito } from "@/central/components/BotaoFavorito";

@@ -4,6 +4,7 @@ import { BarraBusca } from "@/central/components/BarraBusca";
 import { useState } from "react";
 import { rotas } from "@/central/rotas";
 import { useFavoritos } from "@/central/hooks/useFavoritos";
+import { useSessao } from "@/central/autenticacao/SessaoContexto";
 
 /**
  * Home — a "Central do Paciente" (§3 e §33).
@@ -49,15 +50,26 @@ export function Home() {
   const navegar = useNavigate();
   const [consulta, definirConsulta] = useState("");
   const salvos = useFavoritos((estado) => estado.itens.length);
+  const { acesso, configuracoes, sair } = useSessao();
+
+  const primeiroNome = acesso.nome?.trim().split(" ")[0] ?? null;
+  const vencendo =
+    acesso.diasRestantes !== null && acesso.diasRestantes >= 0 && acesso.diasRestantes <= 7;
 
   return (
     <>
       <header className="c-cabecalho">
         <div className="c-cabecalho-linha">
           <div>
-            <p className="c-marca">Central do paciente</p>
-            <h1 className="c-titulo">Facilite suas escolhas no dia a dia.</h1>
+            <p className="c-marca">{configuracoes.nomeCentral}</p>
+            <h1 className="c-titulo">
+              {primeiroNome ? `Olá, ${primeiroNome}.` : configuracoes.fraseHome}
+            </h1>
+            {primeiroNome && <p className="c-subtitulo">{configuracoes.fraseHome}</p>}
           </div>
+          <button type="button" className="c-favoritar" aria-label="Sair da conta" onClick={() => void sair()}>
+            <Icone nome="voltar" tamanho={17} />
+          </button>
         </div>
       </header>
 
@@ -75,6 +87,29 @@ export function Home() {
           <button type="button" className="c-chip" style={{ marginTop: 12 }} onClick={() => navegar(rotas.busca(consulta))}>
             <Icone nome="busca" tamanho={14} />
             Buscar por “{consulta.trim()}”
+          </button>
+        )}
+
+        {vencendo && (
+          <div className="c-aviso" role="status">
+            <Icone nome="relogio" tamanho={19} />
+            <span>
+              Seu acesso vai até {acesso.dataFim ? acesso.dataFim.split("-").reverse().join("/") : ""}
+              {acesso.diasRestantes === 0
+                ? " — termina hoje."
+                : ` — faltam ${acesso.diasRestantes} ${acesso.diasRestantes === 1 ? "dia" : "dias"}.`}
+            </span>
+          </div>
+        )}
+
+        {acesso.papel === "admin" && (
+          <button
+            type="button"
+            className="c-botao c-botao-secundario"
+            style={{ marginTop: 16 }}
+            onClick={() => navegar(rotas.admin)}
+          >
+            Abrir a área da nutricionista
           </button>
         )}
 

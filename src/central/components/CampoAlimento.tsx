@@ -1,6 +1,6 @@
 import { useId, useMemo, useRef, useState } from "react";
 import type { Alimento } from "@/central/types";
-import { catalogo } from "@/central/data/catalogo";
+import { catalogo } from "@/central/dados/catalogo";
 import { buscarAlimentos } from "@/central/utils/buscaAlimentos";
 import { Icone } from "./Icone";
 

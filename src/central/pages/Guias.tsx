@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { catalogo } from "@/central/data/catalogo";
-import { TEMAS_GUIAS } from "@/central/data/guias";
+import { catalogo } from "@/central/dados/catalogo";
+import { TEMAS_GUIAS } from "@/central/dados/sementes/guias";
 import { CabecalhoPagina } from "@/central/components/CabecalhoPagina";
 import { Icone } from "@/central/components/Icone";
 import { SeloNeutro } from "@/central/components/Selo";

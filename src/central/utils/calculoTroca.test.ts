@@ -4,7 +4,12 @@ import type { Alimento, Equivalencia, GrupoAlimentar, Medida } from "@/central/t
 import { calcularTroca, type ContextoCalculo } from "./calculoTroca";
 import { combinarPorcoes, emPorcoes, medidaDePorcoes } from "./porcoes";
 import { arredondarExibicao, converter } from "./medidas";
-import { catalogo } from "@/central/data/catalogo";
+import { catalogo, hidratar } from "@/central/dados/catalogo";
+import { repositorioLocal } from "@/central/dados/repositorioLocal";
+
+// O catálogo vive em memória e é preenchido no início do app. Nos testes,
+// preenchemos a partir das mesmas sementes que alimentam o banco.
+hidratar(await repositorioLocal.carregarCatalogo());
 
 /**
  * Testes do motor de cálculo (§34 do briefing: "teste também exemplos

@@ -1,5 +1,5 @@
 import type { Alimento, Medida, Unidade } from "@/central/types";
-import { catalogo } from "@/central/data/catalogo";
+import { catalogo } from "@/central/dados/catalogo";
 
 /**
  * Conversão de unidades **dentro de um alimento**.

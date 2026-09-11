@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { INDICE_BUSCA } from "@/central/data/indiceBusca";
+import { indiceBusca } from "@/central/dados/indiceBusca";
 import { buscar, totalDeResultados } from "@/central/utils/buscaGlobal";
 import { BarraBusca } from "@/central/components/BarraBusca";
 import { CabecalhoPagina } from "@/central/components/CabecalhoPagina";
@@ -23,7 +23,7 @@ export function Busca() {
   const [parametros, definirParametros] = useSearchParams();
   const consulta = parametros.get("q") ?? "";
 
-  const secoes = useMemo(() => buscar(INDICE_BUSCA, consulta), [consulta]);
+  const secoes = useMemo(() => buscar(indiceBusca(), consulta), [consulta]);
   const total = totalDeResultados(secoes);
 
   return (

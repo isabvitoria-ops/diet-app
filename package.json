@@ -1,8 +1,8 @@
 {
-  "name": "diet-app",
+  "name": "central-do-paciente",
   "private": true,
   "version": "0.1.0",
-  "description": "App de integração do paciente ao profissional — PWA da nutricionista e do paciente",
+  "description": "Central do Paciente — ferramenta de consulta e área administrativa da nutricionista",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,10 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
     "lint": "eslint .",
-    "test": "node --test --import ./scripts/registrar-alias.mjs \"src/**/*.test.ts\""
+    "test": "node --test --import ./scripts/registrar-alias.mjs \"src/**/*.test.ts\"",
+    "seed": "node --import ./scripts/registrar-alias.mjs scripts/gerar-seed.mjs",
+    "test:banco": "./scripts/testar-banco.sh",
+    "instalador": "node scripts/gerar-instalador.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

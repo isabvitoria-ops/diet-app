@@ -9,7 +9,7 @@ import type {
   ResultadoTroca,
   TrocaSemResultado,
 } from "@/central/types";
-import { catalogo } from "@/central/data/catalogo";
+import { catalogo } from "@/central/dados/catalogo";
 import { arredondarExibicao, converter } from "./medidas";
 import { emPorcoes, medidaDePorcoes } from "./porcoes";
 

@@ -1,0 +1,40 @@
+/**
+ * Configurações do app (§46, §47 do briefing).
+ *
+ * O número de WhatsApp não pode estar espalhado pelo código: ele mora aqui e,
+ * em produção, na tabela `configuracoes` do banco — trocar é editar um campo
+ * no painel, não caçar string por arquivo.
+ */
+export interface Configuracao {
+  chave: string;
+  valor: unknown;
+  descricao: string;
+}
+
+export const CONFIGURACOES: Configuracao[] = [
+  {
+    chave: "nome_central",
+    valor: "Central do Paciente",
+    descricao: "Nome exibido no topo do app.",
+  },
+  {
+    chave: "frase_home",
+    valor: "Facilite suas escolhas no dia a dia.",
+    descricao: "Frase da tela inicial.",
+  },
+  {
+    chave: "whatsapp",
+    valor: "",
+    descricao: "Número do WhatsApp da nutricionista, só dígitos com DDI e DDD (ex.: 5511999999999).",
+  },
+  {
+    chave: "nome_nutricionista",
+    valor: "",
+    descricao: "Nome que aparece nos textos de contato.",
+  },
+  {
+    chave: "alerta_vencimento_dias",
+    valor: 15,
+    descricao: "A partir de quantos dias antes do fim o paciente entra em 'próximo do vencimento'.",
+  },
+];

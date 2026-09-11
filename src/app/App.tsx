@@ -1,76 +1,88 @@
 import { Suspense, lazy } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import "@/styles/global.css";
-import { useAuth } from "@/hooks/useAuth";
-import { Login } from "./Login";
-import { Mfa } from "./Mfa";
-import { NUTRICIONISTA_ID } from "@/data/mocks/ids";
+import "@/central/styles/central.css";
+import { ProvedorSessao } from "@/central/autenticacao/SessaoContexto";
+import { Carregando, ExigeAcesso, ExigeAdmin, ExigeSessao } from "@/central/autenticacao/Protegido";
+import { Entrar } from "@/central/autenticacao/Entrar";
+import { DefinirSenha } from "@/central/autenticacao/DefinirSenha";
+import { RecuperarSenha } from "@/central/autenticacao/RecuperarSenha";
+import { SemAcesso } from "@/central/autenticacao/SemAcesso";
+import { PREFIXO_ANTIGO, rotas } from "@/central/rotas";
 
-// Performance (briefing §17): paciente e nutricionista nunca usam o app um
-// do outro na mesma sessão — cada bundle só baixa o que a sua tela precisa
-// em vez de carregar os dois de largada. A Central do Paciente entra na
-// mesma regra: quem faz login no acompanhamento não baixa o bundle dela.
-const AppPaciente = lazy(() => import("./paciente/AppPaciente").then((m) => ({ default: m.AppPaciente })));
-const AppNutri = lazy(() => import("./nutricionista/AppNutri").then((m) => ({ default: m.AppNutri })));
+// Cada área baixa só o que precisa: quem é paciente nunca carrega o pacote
+// da área da nutricionista, e vice-versa.
 const CentralApp = lazy(() => import("@/central/CentralApp").then((m) => ({ default: m.CentralApp })));
-
-function Carregando() {
-  return (
-    <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "var(--paper)", color: "var(--ink-2)", fontFamily: "system-ui" }}>
-      Carregando…
-    </div>
-  );
-}
+const AdminApp = lazy(() => import("@/central/admin/AdminApp").then((m) => ({ default: m.AdminApp })));
+const Consultorio = lazy(() => import("./Consultorio").then((m) => ({ default: m.Consultorio })));
 
 /**
- * Roteamento de topo: `/central/*` (aberto) e todo o resto (autenticado).
+ * Roteamento de topo.
  *
- * A Central do Paciente é uma ferramenta de consulta — troca de alimentos,
- * comer fora, guias — e não toca em dado clínico de ninguém, então fica
- * fora do portão de login: o paciente abre o link e usa. O acompanhamento
- * (`/paciente`, `/nutricionista`) continua exigindo sessão exatamente como
- * antes; o que mudou foi só a ordem — o `BrowserRouter` agora envolve o
- * portão em vez de ficar depois dele.
+ *   /                 Central do paciente — exige acesso liberado
+ *   /entrar           entrada, também usada pelo convite
+ *   /definir-senha    onde o link do e-mail cai
+ *   /sem-acesso       expirado, suspenso ou ainda não liberado
+ *   /admin            área da nutricionista
+ *   /central/...      redireciona para o caminho novo (links já enviados)
+ *   /consultorio      app antigo de acompanhamento, desligado por padrão
+ *
+ * Os portões daqui (`ExigeAcesso`, `ExigeAdmin`) servem para levar a pessoa
+ * à tela certa. Quem de fato protege o conteúdo é a política de acesso do
+ * banco — ver supabase/migracoes/0003_rls.sql.
  */
 export function App() {
+  // O app antigo de acompanhamento (login de teste, dados fictícios em
+  // memória) continua no repositório, mas fica fora do ar por padrão: ele
+  // aceita qualquer senha e mostra pacientes inventados, o que não pode
+  // aparecer num endereço que pacientes de verdade vão acessar. Para usar em
+  // desenvolvimento, defina VITE_APP_ANTIGO=1 no .env.local.
+  const mostrarAppAntigo = import.meta.env.VITE_APP_ANTIGO === "1";
+
   return (
     <BrowserRouter>
-      <Suspense fallback={<Carregando />}>
-        <Routes>
-          <Route path="/central/*" element={<CentralApp />} />
-          <Route path="/*" element={<AppAutenticado />} />
-        </Routes>
-      </Suspense>
+      <ProvedorSessao>
+        <Suspense fallback={<Carregando />}>
+          <Routes>
+            <Route path={rotas.entrar} element={<Entrar />} />
+            <Route path={rotas.definirSenha} element={<DefinirSenha />} />
+            <Route path={rotas.recuperarSenha} element={<RecuperarSenha />} />
+            <Route
+              path={rotas.semAcesso}
+              element={
+                <ExigeSessao>
+                  <SemAcesso />
+                </ExigeSessao>
+              }
+            />
+            <Route
+              path="/admin/*"
+              element={
+                <ExigeAdmin>
+                  <AdminApp />
+                </ExigeAdmin>
+              }
+            />
+            <Route path={`${PREFIXO_ANTIGO}/*`} element={<RedirecionaPrefixoAntigo />} />
+            {mostrarAppAntigo && <Route path="/consultorio/*" element={<Consultorio />} />}
+            <Route
+              path="/*"
+              element={
+                <ExigeAcesso>
+                  <CentralApp />
+                </ExigeAcesso>
+              }
+            />
+          </Routes>
+        </Suspense>
+      </ProvedorSessao>
     </BrowserRouter>
   );
 }
 
-/**
- * Single-tenant (briefing §3, §21): hoje só existe uma nutricionista, então
- * o app do paciente aponta direto para `NUTRICIONISTA_ID` em vez de
- * resolver dinamicamente — isso muda no dia em que houver mais de uma conta.
- */
-function AppAutenticado() {
-  const { sessao, carregando, aguardandoMfa } = useAuth();
-
-  if (carregando) return <Carregando />;
-  if (aguardandoMfa) return <Mfa />;
-  if (!sessao) return <Login />;
-
-  return (
-    <Routes>
-      {sessao.papel === "paciente" && (
-        <>
-          <Route path="paciente/*" element={<AppPaciente pacienteId={sessao.perfilId} nutricionistaId={NUTRICIONISTA_ID} />} />
-          <Route path="*" element={<Navigate to="/paciente" replace />} />
-        </>
-      )}
-      {sessao.papel === "nutricionista" && (
-        <>
-          <Route path="nutricionista/*" element={<AppNutri nutricionistaId={sessao.perfilId} />} />
-          <Route path="*" element={<Navigate to="/nutricionista" replace />} />
-        </>
-      )}
-    </Routes>
-  );
+/** A Central morava em /central; links já enviados continuam funcionando. */
+function RedirecionaPrefixoAntigo() {
+  const { pathname, search } = useLocation();
+  const destino = pathname.slice(PREFIXO_ANTIGO.length) || "/";
+  return <Navigate to={`${destino}${search}`} replace />;
 }

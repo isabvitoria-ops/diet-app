@@ -3,13 +3,21 @@ import { rotas } from "@/central/rotas";
 import { catalogo } from "./catalogo";
 
 /**
- * Índice da busca global (§18).
+ * Índice da busca global (§20 do briefing).
  *
- * Montado a partir dos mesmos cadastros que alimentam as telas — quem
- * acrescenta um alimento, uma categoria ou um guia não precisa lembrar de
- * indexar nada, a entrada aparece na busca no mesmo instante.
+ * Montado a partir do catálogo já carregado — quem cadastra um alimento, uma
+ * categoria ou um guia não precisa lembrar de indexar nada. Como o catálogo
+ * só muda quando o app recarrega, o índice é construído uma vez e guardado.
  */
-export function montarIndice(): ItemIndice[] {
+let cache: ItemIndice[] | null = null;
+
+export function invalidarIndice(): void {
+  cache = null;
+}
+
+export function indiceBusca(): ItemIndice[] {
+  if (cache) return cache;
+
   const itens: ItemIndice[] = [
     {
       id: "ferramenta:trocas",
@@ -110,8 +118,6 @@ export function montarIndice(): ItemIndice[] {
     });
   }
 
+  cache = itens;
   return itens;
 }
-
-/** O índice é estável enquanto os dados vierem de arquivo; monta uma vez só. */
-export const INDICE_BUSCA = montarIndice();

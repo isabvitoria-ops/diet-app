@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { catalogo } from "@/central/data/catalogo";
+import { catalogo } from "@/central/dados/catalogo";
 import { BarraBusca } from "@/central/components/BarraBusca";
 import { CabecalhoPagina } from "@/central/components/CabecalhoPagina";
 import { Icone } from "@/central/components/Icone";
