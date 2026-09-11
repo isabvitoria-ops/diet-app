@@ -29,40 +29,45 @@ export function CartaoOpcao({
 
   return (
     <article className="c-opcao">
-      <button
-        type="button"
-        className="c-opcao-topo"
-        aria-expanded={temCorpo ? aberto : undefined}
-        onClick={() => temCorpo && definirAberto((v) => !v)}
-        style={{ cursor: temCorpo ? "pointer" : "default" }}
-      >
-        <span style={{ flex: 1 }}>
-          <span className="c-opcao-titulo">{opcao.titulo}</span>
-          {opcao.nivel && (
-            <span style={{ display: "block", marginTop: 7 }}>
-              <Selo nivel={opcao.nivel} />
-            </span>
-          )}
-        </span>
-        <span style={{ display: "flex", alignItems: "center", gap: 8, flex: "none" }}>
-          <BotaoFavorito
-            item={{
-              tipo: "opcao",
-              refId: `${categoriaId}:${opcao.id}`,
-              titulo: opcao.titulo,
-              subtitulo: categoriaNome,
-              rota: rotas.opcao(categoriaId, opcao.id),
-            }}
-          />
+      <div className="c-opcao-topo">
+        <button
+          type="button"
+          className="c-opcao-abrir"
+          aria-expanded={temCorpo ? aberto : undefined}
+          onClick={() => temCorpo && definirAberto((v) => !v)}
+          style={{ cursor: temCorpo ? "pointer" : "default" }}
+        >
+          <span style={{ flex: 1 }}>
+            <span className="c-opcao-titulo">{opcao.titulo}</span>
+            {opcao.nivel && (
+              <span style={{ display: "block", marginTop: 7 }}>
+                <Selo nivel={opcao.nivel} />
+              </span>
+            )}
+          </span>
           {temCorpo && (
             <Icone
               nome="seta"
               tamanho={17}
-              style={{ transform: aberto ? "rotate(90deg)" : "none", transition: "transform .16s ease", color: "var(--text-subtle)" }}
+              style={{
+                transform: aberto ? "rotate(90deg)" : "none",
+                transition: "transform .16s ease",
+                color: "var(--icone)",
+                flex: "none",
+              }}
             />
           )}
-        </span>
-      </button>
+        </button>
+        <BotaoFavorito
+          item={{
+            tipo: "opcao",
+            refId: `${categoriaId}:${opcao.id}`,
+            titulo: opcao.titulo,
+            subtitulo: categoriaNome,
+            rota: rotas.opcao(categoriaId, opcao.id),
+          }}
+        />
+      </div>
 
       {aberto && temCorpo && (
         <div className="c-opcao-corpo">

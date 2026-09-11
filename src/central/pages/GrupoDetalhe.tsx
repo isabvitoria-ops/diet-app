@@ -98,35 +98,40 @@ export function GrupoDetalhe() {
                 const temTroca = destinosPossiveis(alimento).length > 0;
                 const unidade = alimento.porcao ? catalogo.unidade(alimento.porcao.unidadeId) : null;
                 return (
-                  <div key={alimento.id} className="c-lista-item" style={{ cursor: temTroca ? "pointer" : "default" }}
-                    onClick={() => temTroca && navegar(rotas.trocaCom(alimento.id))}
-                  >
-                    <span>
-                      <span className="c-lista-item-nome">{alimento.nome}</span>
-                      <span className="c-lista-item-apoio">
-                        {alimento.porcao
-                          ? `1 porção · ${textoMedida(alimento.porcao, unidade)}`
-                          : grupo.regra?.tipo === "livre"
-                            ? "Quantidade livre"
-                            : "Porção a definir"}
+                  <div key={alimento.id} className="c-linha">
+                    <button
+                      type="button"
+                      className="c-linha-alvo"
+                      disabled={!temTroca}
+                      onClick={() => navegar(rotas.trocaCom(alimento.id))}
+                    >
+                      <span style={{ flex: 1 }}>
+                        <span className="c-lista-item-nome">{alimento.nome}</span>
+                        <span className="c-lista-item-apoio">
+                          {alimento.porcao
+                            ? `1 porção · ${textoMedida(alimento.porcao, unidade)}`
+                            : grupo.regra?.tipo === "livre"
+                              ? "Quantidade livre"
+                              : "Porção a definir"}
+                        </span>
                       </span>
-                    </span>
-                    <span className="c-lista-item-direita">
-                      {temTroca ? (
-                        <Icone nome="troca" tamanho={17} />
-                      ) : (
-                        grupo.regra?.tipo !== "livre" && <SeloNeutro>Em cadastro</SeloNeutro>
-                      )}
-                      <BotaoFavorito
-                        item={{
-                          tipo: "alimento",
-                          refId: alimento.id,
-                          titulo: alimento.nome,
-                          subtitulo: grupo.nome,
-                          rota: temTroca ? rotas.trocaCom(alimento.id) : rotas.grupo(grupo.id),
-                        }}
-                      />
-                    </span>
+                      <span className="c-lista-item-direita">
+                        {temTroca ? (
+                          <Icone nome="troca" tamanho={17} />
+                        ) : (
+                          grupo.regra?.tipo !== "livre" && <SeloNeutro>Em cadastro</SeloNeutro>
+                        )}
+                      </span>
+                    </button>
+                    <BotaoFavorito
+                      item={{
+                        tipo: "alimento",
+                        refId: alimento.id,
+                        titulo: alimento.nome,
+                        subtitulo: grupo.nome,
+                        rota: temTroca ? rotas.trocaCom(alimento.id) : rotas.grupo(grupo.id),
+                      }}
+                    />
                   </div>
                 );
               })}

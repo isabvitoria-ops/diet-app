@@ -384,6 +384,44 @@ body:has(.central) {
   background: var(--surface-2);
 }
 
+/* Mesma linha, quando ela tem uma ação própria à direita (salvar, remover):
+   o alvo de navegação vira um botão e a ação fica ao lado dele, nunca
+   dentro. */
+.c-linha {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.c-linha:last-child {
+  border-bottom: 0;
+}
+
+.c-linha:hover {
+  background: var(--surface-2);
+}
+
+.c-linha-alvo {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  padding: 15px 4px 15px 18px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  min-height: 56px;
+}
+
+.c-linha-alvo:disabled {
+  cursor: default;
+  color: inherit;
+  opacity: 1;
+}
+
 .c-lista-item-nome {
   display: block;
   font-size: 15.5px;
@@ -885,13 +923,24 @@ body:has(.central) {
   margin-top: 10px;
 }
 
+/* A linha de topo do cartão é um contêiner, não um botão: dentro dela o
+   botão de abrir e o de salvar são irmãos. Botão dentro de botão é HTML
+   inválido e quebra o foco por teclado e a leitura por leitor de tela. */
 .c-opcao-topo {
   display: flex;
   align-items: center;
+  gap: 8px;
+  padding-right: 14px;
+  min-height: 58px;
+}
+
+.c-opcao-abrir {
+  flex: 1;
+  display: flex;
+  align-items: center;
   gap: 12px;
-  width: 100%;
   text-align: left;
-  padding: 15px 16px;
+  padding: 15px 4px 15px 16px;
   background: none;
   border: 0;
   cursor: pointer;

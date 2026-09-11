@@ -64,27 +64,24 @@ export function Salvos() {
               <h2 className="c-secao-titulo">{rotulo}</h2>
               <div className="c-lista">
                 {doTipo.map((favorito) => (
-                  <div key={favorito.id} className="c-lista-item" style={{ cursor: "pointer" }} onClick={() => navegar(favorito.rota)}>
-                    <span style={{ color: "var(--text-subtle)", display: "flex", flex: "none" }}>
-                      <Icone nome={ICONES[favorito.tipo]} tamanho={19} />
-                    </span>
-                    <span>
-                      <span className="c-lista-item-nome">{favorito.titulo}</span>
-                      {favorito.subtitulo && <span className="c-lista-item-apoio">{favorito.subtitulo}</span>}
-                    </span>
-                    <span className="c-lista-item-direita">
-                      <button
-                        type="button"
-                        className="c-favoritar"
-                        aria-label={`Remover ${favorito.titulo} dos salvos`}
-                        onClick={(evento) => {
-                          evento.stopPropagation();
-                          remover(favorito.id);
-                        }}
-                      >
-                        <Icone nome="fechar" tamanho={16} />
-                      </button>
-                    </span>
+                  <div key={favorito.id} className="c-linha">
+                    <button type="button" className="c-linha-alvo" onClick={() => navegar(favorito.rota)}>
+                      <span style={{ color: "var(--icone)", display: "flex", flex: "none" }}>
+                        <Icone nome={ICONES[favorito.tipo]} tamanho={19} />
+                      </span>
+                      <span style={{ flex: 1 }}>
+                        <span className="c-lista-item-nome">{favorito.titulo}</span>
+                        {favorito.subtitulo && <span className="c-lista-item-apoio">{favorito.subtitulo}</span>}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="c-favoritar"
+                      aria-label={`Remover ${favorito.titulo} dos salvos`}
+                      onClick={() => remover(favorito.id)}
+                    >
+                      <Icone nome="fechar" tamanho={16} />
+                    </button>
                   </div>
                 ))}
               </div>
