@@ -1,40 +1,51 @@
-# Consultório — PWA da nutricionista e do paciente
+# Central do Paciente
 
-App de integração entre paciente e profissional: acompanhamento nutricional diário (check-in, plano alimentar, diário, evolução) e o painel de trabalho da nutricionista (pacientes, plano, base TACO, feed, dashboard).
+Aplicação web mobile-first para os pacientes de nutrição: troca de alimentos
+com cálculo automático, estratégias para comer fora, substituições por grupo
+alimentar, guias e favoritos — com área administrativa, login e controle de
+validade de acesso.
 
-PWA — Vite + React + TypeScript + Supabase (hoje sobre um mock em memória, ver `ARCHITECTURE.md`).
+React + Vite + TypeScript + Supabase, publicado na Vercel.
 
 ## Rodando localmente
 
 ```bash
 npm install
-npm run dev       # http://localhost:5173
+cp .env.example .env.local   # preencha, ou deixe vazio para o modo demonstração
+npm run dev                  # http://localhost:5173
 ```
 
-Login de teste (senha: qualquer coisa com 4+ caracteres):
-- Nutricionista: `nutri@consultorio.com` — pede MFA no primeiro acesso de cada dispositivo (código: qualquer sequência de 6 dígitos, é mock).
-- Paciente (Marina, ativa): `marina@email.com`
-- Paciente (Helena, acesso encerrado — deve ser rejeitado): `helena@email.com`
+Sem as variáveis do Supabase o app abre em **modo demonstração**: funciona
+inteiro, sem login, com dados de exemplo que ficam só no navegador.
 
-## Outros comandos
+## Comandos
 
 ```bash
-npm run build      # build de produção + typecheck + PWA (manifest/service worker)
-npm run preview    # serve o build de produção localmente
-npm run typecheck  # só typecheck, sem build
-npm test           # testes do cálculo de troca e do contraste da paleta
+npm test             # motor de cálculo e contraste da paleta
+npm run test:banco   # bateria de segurança do banco (precisa de Postgres local)
+npm run typecheck
+npm run lint
+npm run build
+npm run seed         # regenera os dados iniciais do banco a partir das sementes
+npm run instalador   # regenera supabase/instalar.sql
 ```
-
-## Central do Paciente
-
-Ferramenta de consulta do paciente — troca de alimentos com cálculo automático,
-comer fora, substituições por grupo, guias e favoritos. Abre em
-[`/central`](http://localhost:5173/central), sem login, e é um app separado do
-acompanhamento.
-
-Ver `CENTRAL.md` para como cadastrar alimentos, equivalências, restaurantes e
-guias, e como trocar a identidade visual.
 
 ## Documentação
 
-Ver `ARCHITECTURE.md` para a arquitetura completa, o mapeamento de cada regra de negócio para o código, e o que fica para uma próxima etapa (Supabase real, upload de fotos, etc).
+- **[PUBLICAR.md](PUBLICAR.md)** — como colocar no ar, passo a passo, sem saber
+  programar: Supabase, GitHub, Vercel, domínio próprio e o que fazer quando
+  algo der errado.
+- **[CENTRAL.md](CENTRAL.md)** — arquitetura, banco de dados, controle de
+  acesso e como cadastrar alimentos, equivalências, restaurantes e guias.
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** — o app anterior de acompanhamento
+  diário, que continua no repositório e hoje fica desligado por padrão
+  (ver seção 9 do CENTRAL.md).
+
+## A regra central
+
+> **Convite não é acesso.**
+> Acesso = conta autenticada + paciente cadastrado e vinculado + não suspenso +
+> hoje dentro do período.
+
+Ela está implementada no banco (`tem_acesso()`), não no frontend, e é
+verificada por 61 testes que rodam num Postgres de verdade.

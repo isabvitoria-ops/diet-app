@@ -1,328 +1,361 @@
-# Central do Paciente
+# Central do Paciente — arquitetura e manutenção
 
-Ferramenta de consulta do paciente: troca de alimentos com cálculo automático,
-estratégias para comer fora, lista de substituições por grupo, guias e favoritos.
+Ferramenta de consulta do paciente (troca de alimentos, comer fora,
+substituições, guias, salvos) com área administrativa da nutricionista,
+autenticação e controle de validade de acesso.
 
-Abre em **`/central`**, sem login. É um app separado do acompanhamento
-(`/paciente` e `/nutricionista`), que continua exatamente como estava.
+Para colocar no ar pela primeira vez, veja **[PUBLICAR.md](PUBLICAR.md)**.
 
 ---
 
-## 1. Stack
+## 1. A regra que governa o sistema
+
+> **Convite não é acesso.**
+> Acesso = conta autenticada **+** paciente cadastrado e vinculado **+** não
+> suspenso **+** hoje dentro do período.
+
+Essa frase existe em **um** lugar executável: a função `tem_acesso()` em
+`supabase/migracoes/0002_funcoes.sql`. Todas as políticas de leitura de
+conteúdo chamam ela. O frontend não recalcula a regra — ele pergunta
+(`meu_acesso()`) e obedece.
+
+Três consequências que valem saber:
+
+- **Expirar é automático.** "Expirado" não é um status gravado: é o resultado
+  de comparar a data de fim com hoje, toda vez que alguém pergunta. Não há
+  rotina diária para falhar, e não há dia em que um plano vencido continue
+  aberto porque alguém esqueceu de rodar algo.
+- **Esconder no frontend não protege nada.** Se o paciente vencido digitar a
+  URL antiga, o banco devolve zero linhas. Os portões de tela
+  (`ExigeAcesso`, `ExigeAdmin`) só existem para levar a pessoa à tela certa.
+- **Vencer não apaga ninguém.** Expirar, suspender e excluir são três coisas
+  diferentes, e só a última pede confirmação.
+
+Isso não é uma promessa: são 61 verificações rodando num Postgres de verdade.
+Ver a seção 7.
+
+---
+
+## 2. Stack
 
 | Camada | Escolha | Por quê |
 |---|---|---|
-| Build | Vite | Já era a do projeto |
-| Interface | React 18 + TypeScript | Já era a do projeto |
+| Build | Vite | Já era do projeto |
+| Interface | React 18 + TypeScript | Já era do projeto |
 | Rotas | react-router-dom | Já era dependência |
-| Estado | Zustand | Já era dependência; usado só em favoritos e histórico |
-| Estilo | CSS puro com variáveis | Sem framework: a identidade visual mora em um bloco de variáveis |
-| Testes | `node:test` nativo | Zero dependência nova |
+| Estado | Zustand | Já era dependência |
+| Banco, login, arquivos | Supabase (PostgreSQL) | Pedido do briefing; RLS resolve o controle de acesso no lugar certo |
+| Hospedagem | Vercel | Pedido do briefing; publica a cada envio ao GitHub |
+| Estilo | CSS puro com variáveis | Sem framework: a identidade visual inteira é um bloco de variáveis |
+| Testes | `node:test` nativo + psql + Playwright | Nenhuma dependência de teste instalada |
 
-**Nenhuma dependência nova foi instalada.** A fonte de título (Fraunces) é
-servida pelo próprio app, em `public/fonts/`, sem pedir nada ao Google.
+**Nenhuma dependência nova foi adicionada** em relação ao que o projeto já
+tinha. A fonte de título é servida pelo próprio app.
 
 ---
 
-## 2. Como o código está organizado
+## 3. Estrutura
 
 ```
+supabase/
+  instalar.sql          Tudo junto, para colar no SQL Editor (GERADO)
+  tornar-admin.sql      Promove a sua conta a administradora
+  migracoes/
+    0001_esquema.sql      tabelas e índices
+    0002_funcoes.sql      tem_acesso(), situacao, gatilhos, meu_acesso()
+    0003_rls.sql          as políticas de acesso
+    0004_dados_iniciais.sql  dados de partida (GERADO de src/central/dados/sementes)
+    0005_permissoes.sql   grants explícitos
+  testes/
+    00_ambiente.sql       imita o Supabase num Postgres local
+    01_acesso.sql         a bateria de segurança
+
 src/central/
-  CentralApp.tsx      A casca: rotas + navegação. Sem regra de negócio.
-  rotas.ts            Todos os caminhos em um lugar só.
+  rotas.ts              todos os caminhos em um lugar
 
-  data/               OS DADOS — é aqui que você escreve conteúdo.
-    unidades.ts         g, ml, unidade, colher, fatia…
-    grupos.ts           Carboidratos, proteínas, vegetais livres…
-    alimentos.ts        Cada alimento e sua porção de referência.
-    equivalencias.ts    Trocas que não saem da razão entre porções.
-    comerFora.ts        Hambúrguer, japonesa, massas, doces…
-    guias.ts            Os temas dos guias.
-    catalogo.ts         A porta de leitura. As telas só falam com ela.
-    indiceBusca.ts      Monta a busca global a partir de tudo acima.
+  dados/                DE ONDE VEM O DADO
+    repositorio.ts        a interface, e quem escolhe a implementação
+    repositorioSupabase.ts  produção
+    repositorioLocal.ts     modo demonstração (sementes + navegador)
+    mapeadores.ts         linha do banco ↔ objeto do app
+    catalogo.ts           o catálogo em memória, carregado uma vez
+    indiceBusca.ts        monta a busca global a partir do catálogo
+    sementes/             OS DADOS INICIAIS — é aqui que você escreve
 
-  utils/              AS CONTAS — lógica pura, sem tela.
-    calculoTroca.ts     O motor da Troca Inteligente.
-    porcoes.ts          Porções, frações e combinações.
-    medidas.ts          Conversão de unidade e arredondamento.
-    buscaAlimentos.ts   Autocomplete dos campos de alimento.
-    buscaGlobal.ts      A busca de tudo.
-    armazenamento.ts    localStorage por trás de uma interface trocável.
+  utils/                AS CONTAS (lógica pura, sem tela)
+    calculoTroca.ts       o motor da Troca Inteligente
+    porcoes.ts            porções, frações e combinações
+    medidas.ts            conversão de unidade e arredondamento
+    situacao.ts           a mesma regra de validade do banco, em TypeScript
+    buscaAlimentos.ts / buscaGlobal.ts / texto.ts / armazenamento.ts
 
-  pages/              UMA TELA POR ARQUIVO.
-  components/         Peças reutilizadas entre telas.
-  hooks/              Favoritos e trocas recentes.
-  types/              O contrato de todos os dados.
-  styles/central.css  A identidade visual inteira.
+  autenticacao/         CONTA E PORTÕES
+    SessaoContexto.tsx    quem está usando e o que pode ver
+    Protegido.tsx         ExigeSessao / ExigeAcesso / ExigeAdmin
+    Entrar / DefinirSenha / RecuperarSenha / SemAcesso
+
+  admin/                ÁREA DA NUTRICIONISTA
+    Painel, Pacientes, FichaPaciente, Alimentos,
+    Equivalencias, Conteudos, Configuracoes
+
+  pages/                TELAS DO PACIENTE (uma por arquivo)
+  components/           peças reutilizadas
+  hooks/                favoritos, pacientes, catálogo
+  types/                o contrato de todos os dados
+  styles/central.css    a identidade visual inteira
 ```
 
-A regra que mantém isso saudável: **tela não conhece dado, dado não conhece
-tela, e conta nenhuma acontece dentro de componente**. Se um número aparece
-na interface, ele veio de uma função em `utils/`.
+A regra que mantém isso saudável: **tela não conhece banco, banco não conhece
+tela, e conta nenhuma acontece dentro de componente.** Se um número aparece na
+interface, ele veio de uma função em `utils/`.
 
 ---
 
-## 3. Onde está cada coisa
+## 4. O banco
 
-| O que | Arquivo |
+### Tabelas
+
+| Tabela | Para quê |
 |---|---|
-| Alimentos | `src/central/data/alimentos.ts` |
-| Equivalências | `src/central/data/equivalencias.ts` |
-| Grupos e a regra dos vegetais livres | `src/central/data/grupos.ts` |
-| Conteúdo de comer fora | `src/central/data/comerFora.ts` |
-| Guias | `src/central/data/guias.ts` |
-| Unidades de medida | `src/central/data/unidades.ts` |
-| Cores, tipografia e espaçamento | `src/central/styles/central.css` |
+| `perfis` | Uma linha por conta autenticada. Diz quem é admin. |
+| `planos` | Mensal, trimestral, semestral, anual. |
+| `pacientes` | O cadastro: e-mail, plano, período, status, último acesso. |
+| `convites` | Registro de cada envio de convite. |
+| `historico_admin` | Cadastro, convite, ativação, renovação, suspensão, reativação. |
+| `unidades` | g, ml, unidade, fatia, colher… |
+| `grupos_alimentares` | Carboidratos, proteínas, vegetais livres… |
+| `alimentos` | Nome, grupo, porção de referência, restrições, tags. |
+| `equivalencias` | As trocas com valor próprio. |
+| `conteudos` | Guias e comer fora (o formato muda dentro de `corpo`). |
+| `favoritos` | O que cada paciente salvou. |
+| `configuracoes` | WhatsApp, nome da Central, dias de alerta. |
 
-Cada um desses arquivos começa com um comentário mostrando o formato e um
-exemplo pronto para copiar.
+### Como o paciente se liga à conta
+
+```
+auth.users (Supabase)  →  perfis  →  pacientes  →  plano + período + status
+```
+
+O e-mail é a chave de encontro. A nutricionista cadastra o paciente antes de
+existir conta; quando a pessoa cria a conta, um gatilho liga as duas pontas.
+Se ela criar conta sem ter sido cadastrada, fica com uma conta autenticada e
+**zero** acesso — que é exatamente o comportamento desejado.
+
+### Situações
+
+| Situação | De onde vem |
+|---|---|
+| `convite_pendente` | ainda não há conta vinculada |
+| `nao_iniciado` | hoje é antes da data de início |
+| `ativo` | dentro do período |
+| `proximo_do_vencimento` | dentro do período, faltando ≤ 15 dias (configurável) |
+| `expirado` | hoje é depois da data de fim |
+| `suspenso` | decisão manual da nutricionista |
+
+Só `convite_pendente`, `ativo` e `suspenso` são gravados. As outras três são
+calculadas na hora, no fuso de São Paulo.
+
+### Níveis de acesso do conteúdo
+
+`publico` (qualquer conta autenticada, mesmo sem plano válido), `paciente`
+(exige acesso liberado) e `premium` (reservado para planos específicos, ainda
+sem uso). Guias e alimentos nascem como `paciente`.
 
 ---
 
-## 4. Como acrescentar um alimento
+## 5. O motor da Troca Inteligente
 
-Em `data/alimentos.ts`, some uma linha na lista:
+Nenhuma combinação está escrita à mão. O cálculo tenta, nesta ordem:
 
-```ts
-alimento({
-  id: "batata-doce-cozida",      // minúsculas, sem acento, com hífen
-  nome: "Batata-doce cozida",
-  grupoId: "carboidratos",       // ver data/grupos.ts
-  porcao: { quantidade: 120, unidadeId: "g" },
-  semGluten: true,
-  semLactose: true,
-  tags: ["batata", "tuberculo"],
-}),
-```
-
-Só isso. O alimento passa a aparecer na lista do grupo, na busca global e —
-por ter porção — **em todas as trocas dentro do grupo**, sem você escrever
-nenhuma equivalência.
-
-Se ainda não souber a porção, omita `porcao`: o alimento aparece marcado como
-"em cadastro" e fica fora da calculadora até você preencher.
-
-**Para oferecer colher, fatia ou unidade** naquele alimento, diga quanto vale
-uma delas:
-
-```ts
-medidas: [
-  { unidadeId: "colher-sopa", equivalenteNaBase: 25 },  // 1 colher = 25 g
-],
-```
-
-O seletor de unidade só mostra o que está cadastrado ali.
-
----
-
-## 5. Como acrescentar uma equivalência
-
-Você só precisa escrever uma quando o valor **não** for a razão entre as
-porções — por exemplo quando a lista de substituição trouxer um número
-próprio para aquele par. Em `data/equivalencias.ts`:
-
-```ts
-{
-  id: "pao-para-tapioca",
-  origemAlimentoId: "pao",
-  destinoAlimentoId: "tapioca",
-  regra: {
-    tipo: "proporcional",
-    de: { quantidade: 50, unidadeId: "g" },
-    para: { quantidade: 40, unidadeId: "g" },
-  },
-  bidirecional: true,
-  fonte: "Lista de substituição",
-  observacao: null,
-},
-```
-
-**Trocas que não escalam em linha reta** usam outro formato:
-
-```ts
-regra: {
-  tipo: "tabela",
-  unidadeOrigemId: "g",
-  unidadeDestinoId: "unidade",
-  pontos: [ { de: 50, para: 1 }, { de: 120, para: 2 } ],
-}
-```
-
-O sistema interpola entre os pontos e **nunca extrapola** além deles — fora da
-faixa cadastrada ele trava no extremo e avisa na tela.
-
-Como o cálculo decide (nesta ordem):
 1. equivalência cadastrada no sentido pedido;
 2. a mesma equivalência lida ao contrário, se for bidirecional;
 3. a razão entre as porções dos dois alimentos, dentro do mesmo grupo;
-4. nada disso fechou → a tela diz o que está faltando, e não mostra número.
+4. nada disso fechou → a tela diz o que falta, e não mostra número.
+
+Três formatos de regra são aceitos: **proporcional** (o caso comum),
+**tabela de pontos** (para trocas que não escalam em linha reta — interpola
+entre os pontos e nunca extrapola) e **fixa**.
+
+O caminho 3 é o que faz o catálogo crescer sozinho: cadastrar a porção de um
+alimento novo já o habilita em todas as trocas do grupo dele.
 
 ---
 
-## 6. Como acrescentar um restaurante ou categoria
+## 6. Como fazer as coisas
 
-Em `data/comerFora.ts`. O mínimo para a categoria já aparecer na grade e na
-busca:
+### Adicionar um alimento
 
-```ts
-{
-  id: "poke",
-  nome: "Poke",
-  resumo: null,
-  icone: "restaurante",          // ver components/Icone.tsx
-  ordem: 10,
-  status: "em-preparacao",
-  introducao: null,
-  decisoes: [],
-  lembretes: [],
-  tags: ["poke", "havaiano"],
-},
+Área da nutricionista → **Alimentos** → **Novo alimento**. O campo que mais
+importa é a porção: com ela preenchida, o alimento entra em todas as trocas do
+grupo, sem escrever equivalência nenhuma. Sem ela, aparece como "sem porção" e
+fica fora da calculadora — em vez de ganhar um valor inventado.
+
+Para editar direto no código (os dados de partida), o arquivo é
+`src/central/dados/sementes/alimentos.ts`. Depois de mexer, rode:
+
+```bash
+npm run seed        # regenera 0004_dados_iniciais.sql
+npm run instalador  # regenera supabase/instalar.sql
 ```
 
-Para publicar, mude `status` para `"publicado"` e preencha as decisões — cada
-decisão é uma escolha real da refeição, com suas opções classificadas:
+### Adicionar uma equivalência
 
-```ts
-decisoes: [
-  {
-    id: "base",
-    titulo: "A base",
-    pergunta: "Sobre o que o prato é montado?",
-    opcoes: [
-      {
-        id: "base-arroz",
-        titulo: "Arroz",
-        descricao: "Texto seu, do seu jeito.",
-        nivel: "melhor",               // "melhor" | "boa" | "ocasional" | null
-        energia: { kcal: 210, mostrarKcal: false, observacao: null },
-        detalhes: ["Marcador curto"],
-        tags: ["arroz"],
-      },
-    ],
-  },
-],
-```
+Área da nutricionista → **Equivalências** → **Nova equivalência**. Só é preciso
+quando a troca **não** for a razão entre as porções — por exemplo quando a
+lista de substituição traz um valor próprio para aquele par.
 
-`kcal` fica guardado mesmo com `mostrarKcal: false`. O número existe no
-sistema e só aparece para o paciente quando você ligar, item a item.
+### Adicionar um restaurante ou categoria de comer fora
 
----
+**Conteúdos** → aba **Comer fora** → **Nova categoria**. Cada categoria é um
+conjunto de decisões ("a massa", "a proteína", "o molho"), e cada decisão tem
+opções classificadas em melhor escolha / boa opção / mais ocasional. Categoria
+em rascunho aparece só para você.
 
-## 7. Como acrescentar um guia
+As calorias de cada opção têm um interruptor próprio: o número fica guardado
+mesmo quando não é exibido.
 
-Em `data/guias.ts`, troque a linha curta por um objeto completo:
+### Adicionar um guia
 
-```ts
-{
-  id: "refeicao-livre",
-  titulo: "Refeição livre",
-  tema: "No dia a dia",           // agrupa na listagem
-  resumo: "Uma linha que aparece na lista.",
-  ordem: 1,
-  status: "publicado",
-  secoes: [
-    {
-      id: "como-funciona",
-      titulo: "Como funciona",
-      paragrafos: ["Um parágrafo por item da lista."],
-      itens: ["Marcador curto", "Outro marcador"],
-    },
-  ],
-  tags: ["refeicao livre"],
-},
-```
+**Conteúdos** → aba **Guias** → **Novo guia**. Cada seção tem título,
+parágrafos e marcadores, escritos um por linha. Enquanto não houver seção
+nenhuma, o guia aparece como "em breve" para o paciente.
 
-Enquanto `secoes` estiver vazio, o guia aparece como "em breve" — de propósito.
+### Mudar a identidade visual
 
----
-
-## 8. Como mudar a identidade visual
-
-Tudo mora no primeiro bloco de `src/central/styles/central.css`:
+Tudo no primeiro bloco de `src/central/styles/central.css`:
 
 ```css
 .central {
   --primary: #3a6355;
-  --primary-dark: #274539;
   --background: #f6f4f1;
   --surface: #ffffff;
   --text: #1f1d1b;
-  --text-muted: #655f59;
   --border: #e6e1d9;
   --success: #3d6650;
   --warning: #7d5c14;
   --danger: #8f4034;
   --radius: 20px;
   --font-display: "Fraunces", Georgia, serif;
-  --font-body: "Public Sans", system-ui, sans-serif;
 }
 ```
 
-Nenhuma regra do arquivo escreve cor no meio do caminho — trocar essas linhas
-troca o app inteiro.
+Nenhuma regra do arquivo escreve cor no meio do caminho. Depois de mexer, rode
+`npm test`: há um teste que confere o contraste de cada par que aparece na tela
+contra a régua da WCAG e diz qual combinação reprovou e por quanto.
 
-Depois de mexer nas cores, rode `npm test`: há um teste que confere o
-contraste de cada par que aparece na tela contra a régua da WCAG e diz qual
-combinação reprovou e por quanto. Trocar de paleta sem tornar o texto ilegível
-deixa de depender de olhar.
+### Mudar o WhatsApp e o nome da Central
 
-**Trocar a fonte de título:** baixe o `.woff2` para `public/fonts/` e ajuste os
-dois blocos `@font-face` no topo do mesmo arquivo.
+Área da nutricionista → **Configurações**. Não precisa publicar de novo.
 
 ---
 
-## 9. Como rodar
+## 7. O que foi verificado rodando
+
+| Bateria | Como rodar | Resultado |
+|---|---|---|
+| Motor de cálculo e contraste | `npm test` | 32 testes |
+| Segurança do banco | `npm run test:banco` | 61 verificações |
+| Interface no navegador | Playwright, ver seção abaixo | 57 verificações |
+
+A bateria de segurança sobe um Postgres limpo, aplica as migrações e assume a
+identidade de sete pessoas diferentes para perguntar ao banco o que cada uma
+consegue ver e fazer. Entre o que ela prova:
+
+- paciente ativa lê conteúdo; expirada, suspensa, não iniciada e avulsa não;
+- a URL protegida direta não devolve nada para quem não tem acesso;
+- paciente não estica a própria data de fim, não se promove a admin, não mexe
+  no cadastro de outra pessoa;
+- paciente A não lê a linha, o perfil nem os favoritos do paciente B;
+- renovar restaura o acesso sem duplicar paciente, e fica no histórico;
+- quem se cadastra sozinho fica autenticado e sem acesso a nada;
+- sem login, a leitura é barrada antes mesmo da política.
+
+Precisa de um Postgres local:
+
+```bash
+npm run test:banco     # usa PGHOST=/tmp PGPORT=5433 por padrão
+```
+
+---
+
+## 8. Modo demonstração
+
+Sem as variáveis de ambiente do Supabase, o app abre inteiro com dados de
+exemplo, sem login, e o que for salvo fica só no navegador. Uma faixa amarela
+avisa o tempo todo.
+
+Serve para três coisas: abrir o projeto e ver tudo antes de configurar serviço
+nenhum; rodar a bateria de interface sem depender de rede; e continuar
+trabalhando se o Supabase estiver fora do ar.
+
+---
+
+## 9. O app antigo de acompanhamento
+
+O produto anterior deste repositório (check-in diário, plano alimentar, diário,
+evolução, painel da nutricionista, base TACO) continua inteiro em `src/app/`,
+`src/components/patient`, `src/components/nutri` e `src/repositories`.
+
+Ele está **desligado por padrão**. Motivo: roda sobre dados fictícios em
+memória e aceita qualquer senha, então não pode dividir endereço com a Central,
+que vai ter paciente de verdade. Para usar em desenvolvimento, coloque
+`VITE_APP_ANTIGO=1` no `.env.local` e acesse `/consultorio`.
+
+Nada foi apagado. Quando for a vez de trazê-lo para o Supabase, o caminho já
+está aberto: ele fala com `src/repositories/`, que é o mesmo formato de troca
+que a Central usa em `dados/repositorio.ts`.
+
+---
+
+## 10. Comandos
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173/central
+npm run dev          # http://localhost:5173
+npm test             # cálculo + contraste da paleta
+npm run test:banco   # segurança do banco (precisa de Postgres local)
+npm run typecheck
+npm run lint
+npm run build
+npm run preview
+npm run seed         # regenera 0004_dados_iniciais.sql das sementes
+npm run instalador   # regenera supabase/instalar.sql
 ```
-
-| Comando | O que faz |
-|---|---|
-| `npm run dev` | Servidor de desenvolvimento |
-| `npm test` | Testes do cálculo e do contraste de cores |
-| `npm run typecheck` | Confere os tipos |
-| `npm run lint` | Confere o estilo do código |
-| `npm run build` | Build de produção |
-| `npm run preview` | Serve o build localmente |
-
-Para ver no celular na mesma rede: `npm run dev -- --host` e abra o endereço
-de rede que aparecer, acrescentando `/central`.
 
 ---
 
-## 10. O que ainda não tem dado
+## 11. O que ainda não tem dado
 
-O briefing pediu para não inventar valor nutricional nem equivalência. Então,
-por ora, só está cadastrado o que veio de você:
+O briefing pede para não inventar valor nutricional nem equivalência. Está
+cadastrado só o que veio de você:
 
 - **1 equivalência**: 100 g de arroz = 80 g de macarrão.
 - **2 alimentos com porção**: arroz (100 g, informado por você) e macarrão
   (80 g, aritmética direta sobre a equivalência acima).
 - **27 vegetais livres**, com a regra de 150 g no almoço e no jantar.
 - **Comer fora**: as opções de comida japonesa e as duas montagens de
-  hambúrguer que você descreveu; massas e doces estão com as decisões
-  mapeadas e as opções em branco.
+  hambúrguer que você descreveu; massas e doces com as decisões mapeadas e as
+  opções em branco.
 - **Guias**: os 11 temas reservados, todos sem conteúdo.
 
-Tudo o mais aparece marcado como "em cadastro" ou "em preparação". Conforme
-você for passando o material, é só preencher os arquivos de `data/` — a
-interface inteira já está pronta para o conteúdo.
+Tudo o mais aparece como "sem porção", "rascunho" ou "em preparação". Conforme
+você for passando o material, dá para cadastrar pela área da nutricionista, sem
+mexer em código.
 
 ---
 
-## 11. Preparado para depois
+## 12. Preparado para depois
 
-- **Banco de dados**: as telas leem por `data/catalogo.ts`. Trocar JSON por
-  Supabase é reimplementar aquelas funções devolvendo `Promise` — nenhum
-  componente conhece a origem do dado.
-- **Login e plano por paciente**: nada na Central assume "um só paciente". Os
-  favoritos já são uma tabela (`id`, `tipo`, `referência`, `data`), o que
-  torna a migração de localStorage para conta um espelhamento, não um
-  redesenho.
-- **Frações de porção**: `utils/porcoes.ts` já calcula combinações do tipo
-  "0,5 porção de arroz + 0,5 de abóbora"; falta só a tela.
-- **Regras não lineares**: o motor já aceita tabela de pontos e regra fixa
-  além da proporcional. Acrescentar um quarto tipo é somar um membro ao tipo
-  e um caso na função, sem tocar em tela.
+- **Conteúdo por plano ou por paciente**: a coluna `nivel_acesso` já existe em
+  `alimentos` e `conteudos`; falta a tabela de exceção por paciente e mais uma
+  condição na política.
+- **Fotos e materiais**: o Supabase Storage já vem no projeto;
+  `alimentos.imagem_url` e `conteudos.imagem_url` estão prontos.
+- **Frações de porção**: `utils/porcoes.ts` já calcula "0,5 porção de arroz +
+  0,5 de abóbora"; falta a tela.
+- **Regras não lineares**: o motor já aceita tabela de pontos e regra fixa.
+- **Pagamento**: fora de escopo por decisão do briefing. O controle financeiro é
+  externo e a validade do acesso é manual.
+- **200 pacientes**: o banco está indexado por status, data de fim e perfil; a
+  lista é uma consulta só sobre uma tabela pequena. A ordem de grandeza que
+  exigiria repensar algo é outra.
