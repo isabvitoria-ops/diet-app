@@ -22,7 +22,18 @@ Login de teste (senha: qualquer coisa com 4+ caracteres):
 npm run build      # build de produção + typecheck + PWA (manifest/service worker)
 npm run preview    # serve o build de produção localmente
 npm run typecheck  # só typecheck, sem build
+npm test           # testes do cálculo de troca e do contraste da paleta
 ```
+
+## Central do Paciente
+
+Ferramenta de consulta do paciente — troca de alimentos com cálculo automático,
+comer fora, substituições por grupo, guias e favoritos. Abre em
+[`/central`](http://localhost:5173/central), sem login, e é um app separado do
+acompanhamento.
+
+Ver `CENTRAL.md` para como cadastrar alimentos, equivalências, restaurantes e
+guias, e como trocar a identidade visual.
 
 ## Documentação
 

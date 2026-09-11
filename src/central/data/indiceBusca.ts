@@ -1,0 +1,117 @@
+import type { ItemIndice } from "@/central/types";
+import { rotas } from "@/central/rotas";
+import { catalogo } from "./catalogo";
+
+/**
+ * Índice da busca global (§18).
+ *
+ * Montado a partir dos mesmos cadastros que alimentam as telas — quem
+ * acrescenta um alimento, uma categoria ou um guia não precisa lembrar de
+ * indexar nada, a entrada aparece na busca no mesmo instante.
+ */
+export function montarIndice(): ItemIndice[] {
+  const itens: ItemIndice[] = [
+    {
+      id: "ferramenta:trocas",
+      tipo: "ferramenta",
+      titulo: "Troca inteligente",
+      subtitulo: "Calcule a quantidade equivalente de outro alimento",
+      rota: rotas.trocas,
+      palavras: ["troca", "trocar", "substituir", "equivalencia", "calculadora", "quantidade"],
+    },
+    {
+      id: "ferramenta:comer-fora",
+      tipo: "ferramenta",
+      titulo: "Comer fora",
+      subtitulo: "Estratégias para escolher fora de casa",
+      rota: rotas.comerFora,
+      palavras: ["comer fora", "restaurante", "delivery", "rua", "pedido"],
+    },
+    {
+      id: "ferramenta:substituicoes",
+      tipo: "ferramenta",
+      titulo: "Substituições",
+      subtitulo: "Suas opções de troca por grupo alimentar",
+      rota: rotas.substituicoes,
+      palavras: ["substituicao", "grupo", "lista", "porcao", "porcoes"],
+    },
+    {
+      id: "ferramenta:guias",
+      tipo: "ferramenta",
+      titulo: "Guias",
+      subtitulo: "Orientações para situações do dia a dia",
+      rota: rotas.guias,
+      palavras: ["guia", "orientacao", "material"],
+    },
+    {
+      id: "ferramenta:salvos",
+      tipo: "ferramenta",
+      titulo: "Salvos",
+      subtitulo: "Seus conteúdos favoritos",
+      rota: rotas.salvos,
+      palavras: ["salvo", "favorito", "guardado"],
+    },
+  ];
+
+  for (const alimento of catalogo.alimentos()) {
+    const grupo = catalogo.grupo(alimento.grupoId);
+    itens.push({
+      id: `alimento:${alimento.id}`,
+      tipo: "alimento",
+      titulo: alimento.nome,
+      subtitulo: grupo ? grupo.nome : null,
+      rota: rotas.trocaCom(alimento.id),
+      palavras: [...alimento.tags, grupo?.nome ?? ""],
+    });
+  }
+
+  for (const grupo of catalogo.grupos()) {
+    itens.push({
+      id: `grupo:${grupo.id}`,
+      tipo: "grupo",
+      titulo: grupo.nome,
+      subtitulo: grupo.descricao,
+      rota: rotas.grupo(grupo.id),
+      palavras: grupo.tags,
+    });
+  }
+
+  for (const categoria of catalogo.categoriasComerFora()) {
+    itens.push({
+      id: `categoria:${categoria.id}`,
+      tipo: "categoria",
+      titulo: categoria.nome,
+      subtitulo: categoria.resumo,
+      rota: rotas.categoria(categoria.id),
+      palavras: categoria.tags,
+    });
+    for (const decisao of categoria.decisoes) {
+      for (const opcao of decisao.opcoes) {
+        itens.push({
+          id: `opcao:${categoria.id}:${opcao.id}`,
+          tipo: "opcao",
+          titulo: opcao.titulo,
+          subtitulo: `${categoria.nome} · ${decisao.titulo}`,
+          rota: rotas.opcao(categoria.id, opcao.id),
+          palavras: [...opcao.tags, categoria.nome],
+        });
+      }
+    }
+  }
+
+  for (const guia of catalogo.guias()) {
+    itens.push({
+      id: `guia:${guia.id}`,
+      tipo: "guia",
+      titulo: guia.titulo,
+      subtitulo: guia.status === "em-preparacao" ? "Em preparação" : guia.resumo,
+      rota: rotas.guia(guia.id),
+      palavras: [...guia.tags, guia.tema],
+    });
+  }
+
+  return itens;
+}
+
+/** O índice é estável enquanto os dados vierem de arquivo; monta uma vez só. */
+export const INDICE_BUSCA = montarIndice();

@@ -9,7 +9,8 @@
     "build": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "node --test --import ./scripts/registrar-alias.mjs \"src/**/*.test.ts\""
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
