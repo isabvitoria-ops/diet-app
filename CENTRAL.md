@@ -306,6 +306,37 @@ corte. Se qualquer uma falhar, ele para em vez de gerar um arquivo quebrado.
 > que o Vite usa para montar o app — sobrescrever aquele arquivo quebraria o
 > build.
 
+### Versão publicada no GitHub Pages
+
+`npm run html-pages` gera **`site-pages/index.html`** e um
+**`site-pages/404.html`** idêntico. É a mesma ideia do arquivo único, com três
+diferenças que o GitHub Pages exige:
+
+- a base é `/metodorota/`, porque o site mora numa subpasta do domínio;
+- as rotas são de caminho (`/metodorota/trocas`), não de hash;
+- o `404.html` é cópia do `index.html`, porque o Pages não sabe reescrever
+  rota interna — ele devolve o 404, e o app assume dali.
+
+As chaves do Supabase entram embutidas no arquivo no momento do build, lidas
+do `.env.local`. São a URL do projeto e a chave pública (`anon`/`publishable`),
+que é feita para ficar no navegador; quem protege o dado é a RLS do banco, não
+o sigilo dessa chave. A chave `service_role` nunca entra em build nenhum.
+
+Os dois arquivos vão para a raiz do repositório `metodorota`.
+
+### Tela de diagnóstico
+
+`/diagnostico` é uma rota **pública de propósito** — ela existe justamente para
+quando o login não está funcionando, então não pode depender de login. Mostra:
+modo (Supabase ou demonstração), URL do projeto, começo da chave pública (nunca
+ela inteira), URL atual, endereço que sai nos convites, papel, situação do
+plano, se tem acesso, quantos itens o catálogo carregou, uma leitura de teste
+no banco e a sessão.
+
+Nenhum dado de paciente aparece ali. A leitura de teste corre contra um limite
+de 10 segundos, então a tela responde mesmo com a rede bloqueada, em vez de
+ficar girando.
+
 ## 9. Modo demonstração
 
 Sem as variáveis de ambiente do Supabase, o app abre inteiro com dados de
@@ -350,6 +381,7 @@ npm run seed         # regenera 0004_dados_iniciais.sql das sementes
 npm run instalador   # regenera supabase/instalar.sql
 npm run artefato     # build da prévia para host estático
 npm run html-unico   # gera site/index.html, a Central num arquivo só
+npm run html-pages   # gera site-pages/index.html + 404.html para o GitHub Pages
 ```
 
 ---

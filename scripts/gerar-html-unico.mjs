@@ -10,11 +10,14 @@
  *
  * Rode com `npm run html-unico`.
  */
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
-const pasta = fileURLToPath(new URL("../dist-unico/", import.meta.url));
+// `pages` sai para o GitHub Pages (subpasta /metodorota/), `unico` abre do
+// disco. O conteúdo é o mesmo; muda o destino e o segundo arquivo.
+const paraPages = process.argv.includes("--pages");
+const pasta = fileURLToPath(new URL(paraPages ? "../dist-pages/" : "../dist-unico/", import.meta.url));
 const html = readFileSync(path.join(pasta, "index.html"), "utf8");
 
 function unico(expressao, oQue) {
@@ -30,7 +33,18 @@ function unico(expressao, oQue) {
 const caminhoCss = unico(/<link rel="stylesheet"[^>]*href="([^"]+)"/g, "folha de estilo");
 const caminhoJs = unico(/<script type="module"[^>]*src="([^"]+)"/g, "script");
 
-const ler = (relativo) => readFileSync(path.join(pasta, relativo.replace(/^\.\//, "")), "utf8");
+// A referência no HTML vem como "./assets/x" no build local e como
+// "/metodorota/assets/x" no build para o Pages. No disco os dois são a mesma
+// coisa: `assets/x` dentro da pasta do build. Cortar tudo que vem antes de
+// "assets/" resolve os dois sem o gerador precisar saber qual base foi usada.
+const ler = (referencia) => {
+  const relativo = referencia.replace(/^.*?(?=assets\/)/, "");
+  const caminho = path.join(pasta, relativo);
+  if (!existsSync(caminho)) {
+    throw new Error(`não achei ${relativo} em ${pasta} — rode o build antes`);
+  }
+  return readFileSync(caminho, "utf8");
+};
 
 // O arquivo único carrega TODO o código junto, inclusive o do app antigo de
 // acompanhamento — e o CSS dele importa fontes do Google. Num arquivo que se
@@ -92,9 +106,21 @@ const pagina = `<!doctype html>
 </html>
 `;
 
-const destino = fileURLToPath(new URL("../site/", import.meta.url));
+const destino = fileURLToPath(new URL(paraPages ? "../site-pages/" : "../site/", import.meta.url));
 mkdirSync(destino, { recursive: true });
 writeFileSync(path.join(destino, "index.html"), pagina);
 
+// O GitHub Pages não sabe devolver o index.html para um caminho que não
+// existe como arquivo, então `/metodorota/trocas` daria 404. Servindo a
+// mesma página como 404.html, o app assume a rota e tudo funciona com
+// endereços normais — o que o fluxo de convite por e-mail exige, porque o
+// token volta no fim da URL e brigaria com rotas por hash.
+if (paraPages) {
+  writeFileSync(path.join(destino, "404.html"), pagina);
+}
+
 const mb = (pagina.length / 1024 / 1024).toFixed(2);
-console.log(`site/index.html gerado — ${mb} MB, arquivo único`);
+const nome = paraPages ? "site-pages" : "site";
+console.log(
+  `${nome}/index.html gerado — ${mb} MB, arquivo único${paraPages ? " (+ 404.html idêntico)" : ""}`,
+);

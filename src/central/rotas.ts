@@ -23,6 +23,7 @@ export const rotas = {
   guia: (guiaId: string) => `/guias/${guiaId}`,
   salvos: "/salvos",
   busca: (consulta?: string) => (consulta ? `/busca?q=${encodeURIComponent(consulta)}` : "/busca"),
+  diagnostico: "/diagnostico",
 
   // Conta
   entrar: "/entrar",

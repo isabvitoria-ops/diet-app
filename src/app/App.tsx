@@ -7,6 +7,7 @@ import { Entrar } from "@/central/autenticacao/Entrar";
 import { DefinirSenha } from "@/central/autenticacao/DefinirSenha";
 import { RecuperarSenha } from "@/central/autenticacao/RecuperarSenha";
 import { SemAcesso } from "@/central/autenticacao/SemAcesso";
+import { Diagnostico } from "@/central/pages/Diagnostico";
 import { PREFIXO_ANTIGO, rotas } from "@/central/rotas";
 
 // Cada área baixa só o que precisa: quem é paciente nunca carrega o pacote
@@ -38,6 +39,17 @@ const Consultorio = lazy(() => import("./Consultorio").then((m) => ({ default: m
  */
 const Roteador = import.meta.env.VITE_ROTEADOR === "hash" ? HashRouter : BrowserRouter;
 
+/**
+ * Prefixo da subpasta onde o app está hospedado.
+ *
+ * No GitHub Pages ele mora em `/metodorota/`, e sem isto o roteador
+ * procuraria as rotas a partir da raiz do domínio e não acharia nenhuma.
+ * O valor vem do `--base` do build.
+ */
+// `BASE_URL` pode vir como "./" no build de prévia, que é um caminho
+// relativo e não serve de prefixo de rota — só uma base absoluta entra aqui.
+const PREFIXO = import.meta.env.BASE_URL?.startsWith("/") ? import.meta.env.BASE_URL : "/";
+
 export function App() {
   // O app antigo de acompanhamento (login de teste, dados fictícios em
   // memória) continua no repositório, mas fica fora do ar por padrão: ele
@@ -47,13 +59,18 @@ export function App() {
   const mostrarAppAntigo = import.meta.env.VITE_APP_ANTIGO === "1";
 
   return (
-    <Roteador>
+    <Roteador basename={PREFIXO}>
       <ProvedorSessao>
         <Suspense fallback={<Carregando />}>
           <Routes>
             <Route path={rotas.entrar} element={<Entrar />} />
             <Route path={rotas.definirSenha} element={<DefinirSenha />} />
             <Route path={rotas.recuperarSenha} element={<RecuperarSenha />} />
+            {/* Aberta de propósito: é a tela que se abre QUANDO algo não
+                funciona, inclusive quando não se consegue entrar. Exigir
+                sessão para chegar nela seria só ter diagnóstico para quem
+                não precisa. Ela não mostra dado de paciente nenhum. */}
+            <Route path={rotas.diagnostico} element={<Diagnostico />} />
             <Route
               path={rotas.semAcesso}
               element={

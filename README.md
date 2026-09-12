@@ -30,6 +30,7 @@ npm run seed         # regenera os dados iniciais do banco a partir das sementes
 npm run instalador   # regenera supabase/instalar.sql
 npm run artefato     # build da prévia para host estático (rotas por hash)
 npm run html-unico   # gera site/index.html — a Central inteira num arquivo só
+npm run html-pages   # gera site-pages/ — index.html + 404.html para o GitHub Pages
 ```
 
 ## Documentação

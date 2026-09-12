@@ -9,3 +9,6 @@ dist-ssr
 .claude/worktrees/
 dist-demo
 dist-unico
+site-pages
+site
+dist-pages

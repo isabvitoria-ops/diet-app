@@ -134,6 +134,33 @@ Agora o branch `main` tem a Central.
 
 ---
 
+## Passo 6-B — Ou publicar no GitHub Pages (o caminho que você já usou)
+
+É a alternativa à Vercel. Não precisa criar conta em lugar nenhum, e o
+endereço é `https://isabvitoria-ops.github.io/metodorota/`.
+
+A diferença é que o GitHub Pages não monta o site sozinho: ele só serve
+arquivo pronto. Então o Claude Code roda `npm run html-pages`, que gera **dois
+arquivos** — `index.html` e `404.html` — com o código, o estilo, as fontes e as
+chaves do Supabase já embutidos.
+
+1. Peça os dois arquivos ao Claude Code.
+2. Abra o repositório `metodorota` no GitHub.
+3. **Add file** → **Upload files** e solte os dois na raiz do repositório.
+4. **Commit changes**.
+5. Espere um ou dois minutos e abra
+   `https://isabvitoria-ops.github.io/metodorota/`.
+
+> Os dois arquivos são iguais por dentro, e os dois precisam subir. O
+> `404.html` é o que faz as telas de dentro (`/metodorota/trocas`, por exemplo)
+> abrirem direto, em vez de dar erro.
+
+Toda vez que mudar alguma coisa no app, é gerar os dois de novo e subir por
+cima. Quem só cadastra paciente, alimento ou conteúdo pela área da
+nutricionista **não precisa mexer nisso**: isso vive no banco, não no arquivo.
+
+---
+
 ## Passo 7 — Voltar ao Supabase e apontar para o site
 
 Agora que o site tem endereço, o Supabase precisa saber qual é.
@@ -149,6 +176,14 @@ Agora que o site tem endereço, o Supabase precisa saber qual é.
    https://central-do-paciente.vercel.app/definir-senha
    ```
 4. **Save**.
+
+> **Se publicou no GitHub Pages (Passo 6-B)**, os valores são estes:
+>
+> - Site URL: `https://isabvitoria-ops.github.io/metodorota/`
+> - Redirect URLs: `https://isabvitoria-ops.github.io/metodorota/**`
+>
+> O `**` no fim cobre todas as telas de dentro de uma vez. Sem isso, o link do
+> e-mail chega mas não deixa entrar.
 
 ---
 
@@ -295,6 +330,20 @@ ignorados.
 | Tela branca depois de publicar | Erro no build | Vercel → Deployments → clique no deploy que falhou → leia o log. Mande o erro para o Claude Code |
 | Uma alteração não aparece | O navegador guardou a versão antiga | Recarregue segurando Shift, ou abra numa aba anônima |
 | "Já existe um paciente com este e-mail" | Duplicado | Use a busca na lista de pacientes: provavelmente ela já está cadastrada |
+
+### A tela que diz o que está acontecendo
+
+Acrescente `/diagnostico` no fim do endereço do seu site — por exemplo
+`https://isabvitoria-ops.github.io/metodorota/diagnostico`.
+
+Ela abre **sem precisar de login**, de propósito: serve justamente para quando
+o login é o problema. Mostra se o app achou o Supabase, qual projeto, qual
+endereço vai nos convites, se a sua conta é administradora, se o plano está
+valendo e se o banco respondeu.
+
+Não aparece dado de paciente ali, e a chave aparece só pelo começo. Quando
+algo não funcionar, abra essa tela, tire um print e mande para o Claude Code —
+é o que responde a maior parte das dúvidas de uma vez.
 
 ---
 

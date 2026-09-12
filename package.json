@@ -17,7 +17,9 @@
     "build:demo": "VITE_ROTEADOR=hash vite build --mode demo --base ./ --outDir dist-demo",
     "artefato": "npm run build:demo && node scripts/gerar-artefato.mjs",
     "build:unico": "VITE_ROTEADOR=hash vite build --mode unico",
-    "html-unico": "npm run build:unico && node scripts/gerar-html-unico.mjs"
+    "html-unico": "npm run build:unico && node scripts/gerar-html-unico.mjs",
+    "build:pages": "vite build --mode pages --base /metodorota/",
+    "html-pages": "npm run build:pages && node scripts/gerar-html-unico.mjs --pages"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

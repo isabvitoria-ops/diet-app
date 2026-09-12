@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => ({
     // Os builds de prévia (`demo`, servido de uma subpasta, e `unico`, um
     // arquivo só) rodam sem PWA: com rotas por hash e endereço de teste, um
     // Service Worker instalado só atrapalharia.
-    ...(mode === "demo" || mode === "unico"
+    ...(mode === "demo" || mode === "unico" || mode === "pages"
       ? []
       : [
     VitePWA({
@@ -83,10 +83,19 @@ export default defineConfig(({ mode }) => ({
    * de onde carregá-los), e todo recurso vira base64 dentro do próprio
    * pacote, fontes inclusive.
    */
+  /**
+   * `unico` e `pages` geram a Central num arquivo HTML só. Para isso, nada
+   * de dividir o código em pedaços carregados sob demanda (não haveria de
+   * onde carregá-los) e todo recurso vira base64 dentro do pacote, fontes
+   * inclusive.
+   *
+   * A diferença entre os dois é só onde o arquivo vai morar: `unico` abre
+   * do disco, `pages` é servido de `/metodorota/` no GitHub Pages.
+   */
   build:
-    mode === "unico"
+    mode === "unico" || mode === "pages"
       ? {
-          outDir: "dist-unico",
+          outDir: mode === "pages" ? "dist-pages" : "dist-unico",
           assetsInlineLimit: 20_000_000,
           rollupOptions: { output: { inlineDynamicImports: true } },
         }
