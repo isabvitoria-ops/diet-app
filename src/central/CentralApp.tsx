@@ -12,6 +12,7 @@ import { GuiaDetalhe } from "./pages/GuiaDetalhe";
 import { Salvos } from "./pages/Salvos";
 import { Busca } from "./pages/Busca";
 import { FaixaDemonstracao } from "./components/FaixaDemonstracao";
+import { FaixaAdmin } from "./components/FaixaAdmin";
 import { rotas } from "./rotas";
 
 /**
@@ -33,6 +34,7 @@ export function CentralApp() {
     <div className="central">
       <div className="c-casca">
         <FaixaDemonstracao />
+        <FaixaAdmin />
         <Routes>
           <Route index element={<Home />} />
           <Route path="trocas" element={<TrocaInteligente />} />

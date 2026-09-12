@@ -1375,6 +1375,45 @@ body:has(.central) {
   line-height: 1.35;
 }
 
+/* A faixa da nutricionista é verde, não âmbar: não é um aviso de risco, é
+   uma informação de contexto mais um atalho. A de demonstração continua
+   sendo a única coisa amarela da tela. */
+.c-faixa-admin {
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+  border-bottom: 1px solid rgba(58, 99, 85, 0.2);
+  padding: 8px var(--gutter);
+  font-size: 12.5px;
+  line-height: 1.35;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 12px;
+}
+
+.c-faixa-admin button {
+  font: inherit;
+  font-weight: 600;
+  color: var(--primary-dark);
+  background: none;
+  border: none;
+  padding: 2px 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  border-radius: 4px;
+}
+
+.c-faixa-admin button:hover {
+  color: var(--text);
+}
+
+.c-faixa-admin button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
 /* ---------------------------------------------------------------- admin */
 
 .c-admin {

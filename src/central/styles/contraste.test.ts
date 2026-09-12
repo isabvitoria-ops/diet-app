@@ -47,6 +47,7 @@ const PARES: [string, string, string, number][] = [
   ["cor principal sobre o cartão", "primary", "surface", 4.5],
   ["texto do cartão de resultado", "surface", "primary", 4.5],
   ["item ativo da navegação", "primary", "primary-soft", 4.5],
+  ["faixa da nutricionista", "primary-dark", "primary-soft", 4.5],
   ["selo de melhor escolha", "success", "success-soft", 4.5],
   ["selo de boa opção", "warning", "warning-soft", 4.5],
   ["selo de mais ocasional", "danger", "danger-soft", 4.5],
