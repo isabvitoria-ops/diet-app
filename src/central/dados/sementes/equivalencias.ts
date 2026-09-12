@@ -50,5 +50,6 @@ export const EQUIVALENCIAS: Equivalencia[] = [
     bidirecional: true,
     fonte: "Lista de substituição",
     observacao: null,
+    ativo: true,
   },
 ];

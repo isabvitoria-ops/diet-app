@@ -56,6 +56,8 @@ export interface Equivalencia {
   bidirecional: boolean;
   fonte: string | null;
   observacao: string | null;
+  /** Desativar tira a troca do ar sem apagar o que foi cadastrado. */
+  ativo: boolean;
 }
 
 /** O que a calculadora recebe. */

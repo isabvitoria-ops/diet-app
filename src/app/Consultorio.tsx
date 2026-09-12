@@ -1,5 +1,8 @@
 import { Suspense, lazy } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
+// Os estilos do app antigo (e a fonte que eles buscam no Google) só são
+// carregados quando ele é aberto — a Central não paga por eles.
+import "@/styles/global.css";
 import { useAuth } from "@/hooks/useAuth";
 import { Login } from "./Login";
 import { Mfa } from "./Mfa";

@@ -442,6 +442,11 @@ after insert on auth.users
 for each row execute function ao_criar_usuario();
 
 -- O caminho inverso: a nutricionista cadastra alguém que já tinha conta.
+--
+-- E o caso que faltava: quando ela CORRIGE o e-mail de um paciente já
+-- vinculado, a conta antiga precisa ser solta. Sem isso, o acesso continuaria
+-- valendo para o endereço errado — que é justamente de quem ela quis tirar —
+-- e o cadastro passaria a dizer uma coisa enquanto o banco fazia outra.
 create or replace function vincular_paciente_ao_perfil()
 returns trigger
 language plpgsql
@@ -450,7 +455,16 @@ set search_path = public
 as $$
 declare
   v_perfil uuid;
+  v_email_da_conta citext;
 begin
+  if tg_op = 'UPDATE' and new.perfil_id is not null and new.email is distinct from old.email then
+    select email into v_email_da_conta from perfis where id = new.perfil_id;
+    if v_email_da_conta is distinct from new.email then
+      new.perfil_id := null;
+      new.status := 'convite_pendente';
+    end if;
+  end if;
+
   if new.perfil_id is null then
     select id into v_perfil from perfis where email = new.email limit 1;
     if v_perfil is not null then
@@ -885,7 +899,7 @@ insert into conteudos (id, tipo, titulo, tema, resumo, icone, ordem, status, cor
 -- Configurações ---------------------------------------------------------------
 insert into configuracoes (chave, valor, descricao) values ('nome_central', '"Central do Paciente"'::jsonb, 'Nome exibido no topo do app.') on conflict (chave) do nothing;
 insert into configuracoes (chave, valor, descricao) values ('frase_home', '"Facilite suas escolhas no dia a dia."'::jsonb, 'Frase da tela inicial.') on conflict (chave) do nothing;
-insert into configuracoes (chave, valor, descricao) values ('lema', '"Sexta é dia de variar, não de sair da dieta."'::jsonb, 'Frase curta de identidade, exibida na tela inicial. Deixe em branco para não mostrar.') on conflict (chave) do nothing;
+insert into configuracoes (chave, valor, descricao) values ('lema', '"Na sexta, o cardápio muda. O plano continua."'::jsonb, 'Frase curta de identidade, exibida na tela inicial. Deixe em branco para não mostrar.') on conflict (chave) do nothing;
 insert into configuracoes (chave, valor, descricao) values ('whatsapp', '"5531994503318"'::jsonb, 'Número do WhatsApp da nutricionista, só dígitos com DDI e DDD (ex.: 5511999999999).') on conflict (chave) do nothing;
 insert into configuracoes (chave, valor, descricao) values ('nome_nutricionista', '"Isabela Marçal"'::jsonb, 'Nome que aparece nos textos de contato.') on conflict (chave) do nothing;
 insert into configuracoes (chave, valor, descricao) values ('alerta_vencimento_dias', '15'::jsonb, 'A partir de quantos dias antes do fim o paciente entra em ''próximo do vencimento''.') on conflict (chave) do nothing;

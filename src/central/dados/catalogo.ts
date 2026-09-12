@@ -81,19 +81,28 @@ export const catalogo = {
   grupos: () => estado.grupos,
   grupo: (id: string): GrupoAlimentar | null => estado.porGrupo.get(id) ?? null,
 
-  alimentos: () => estado.alimentos,
+  /**
+   * O que o paciente vê: só o que está no ar. A nutricionista pede a lista
+   * inteira pelas funções `...Cadastrados`, porque é ela quem religa o que
+   * está desativado — e se as duas listas fossem a mesma, um item escondido
+   * do paciente ficaria invisível também para quem precisa reativá-lo.
+   */
+  alimentos: () => estado.alimentos.filter((a) => a.ativo),
+  alimentosCadastrados: () => estado.alimentos,
   alimento: (id: string): Alimento | null => estado.porAlimento.get(id) ?? null,
   alimentosDoGrupo: (grupoId: string): Alimento[] =>
     estado.alimentos
-      .filter((a) => a.grupoId === grupoId)
+      .filter((a) => a.ativo && a.grupoId === grupoId)
       .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
 
-  equivalencias: () => estado.equivalencias,
+  equivalencias: () => estado.equivalencias.filter((e) => e.ativo),
+  equivalenciasCadastradas: () => estado.equivalencias,
   equivalenciasDe: (alimentoId: string): Equivalencia[] =>
     estado.equivalencias.filter(
       (e) =>
-        e.origemAlimentoId === alimentoId ||
-        (e.bidirecional && e.destinoAlimentoId === alimentoId),
+        e.ativo &&
+        (e.origemAlimentoId === alimentoId ||
+          (e.bidirecional && e.destinoAlimentoId === alimentoId)),
     ),
 
   categoriasComerFora: () => estado.categoriasComerFora,

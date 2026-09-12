@@ -119,13 +119,18 @@ export function CampoAlimento({
 
       {opcoes.length === 0 && vazio && <p className="c-contagem">{vazio}</p>}
 
-      {aberto && opcoes.length > 0 && (
+      {/* A mensagem de "nada encontrado" fica FORA da lista: uma lista de
+          opções só pode conter opções — um parágrafo solto ali confunde o
+          leitor de tela, que anuncia o aviso como se fosse um alimento
+          selecionável. */}
+      {aberto && opcoes.length > 0 && sugestoes.length === 0 && (
+        <p className="c-sugestoes c-sem-sugestao" role="status">
+          Nada encontrado com esse nome.
+        </p>
+      )}
+
+      {aberto && sugestoes.length > 0 && (
         <div className="c-sugestoes" id={idLista} role="listbox" aria-label={rotulo}>
-          {sugestoes.length === 0 && (
-            <p className="c-sugestao" style={{ color: "var(--text-muted)" }}>
-              Nada encontrado com esse nome.
-            </p>
-          )}
           {sugestoes.map((alimento, indice) => {
             const grupo = catalogo.grupo(alimento.grupoId);
             return (

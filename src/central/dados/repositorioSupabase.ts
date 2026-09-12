@@ -269,6 +269,10 @@ export const repositorioSupabase: Repositorio = {
         lembretes: categoria.lembretes,
       },
       tags: categoria.tags,
+      // Quem controla a visibilidade de conteúdo é `status`, não `ativo`.
+      // Mandar explícito evita que um upsert deixe a coluna no valor padrão
+      // por omissão e mude o que ninguém pediu para mudar.
+      ativo: true,
     });
     erro("salvar categoria", error);
   },
@@ -285,6 +289,7 @@ export const repositorioSupabase: Repositorio = {
       status: guia.status === "publicado" ? "publicado" : "rascunho",
       corpo: { secoes: guia.secoes },
       tags: guia.tags,
+      ativo: true,
     });
     erro("salvar guia", error);
   },

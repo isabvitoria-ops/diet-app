@@ -15,6 +15,8 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_ANON_KEY?: string;
   /** "1" reativa o app antigo de acompanhamento em /consultorio. Fora de produção. */
   readonly VITE_APP_ANTIGO?: string;
+  /** "hash" troca as rotas para `#/rota` — usado só pelo build de demonstração. */
+  readonly VITE_ROTEADOR?: string;
 }
 
 interface ImportMeta {

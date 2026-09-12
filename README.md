@@ -28,6 +28,7 @@ npm run lint
 npm run build
 npm run seed         # regenera os dados iniciais do banco a partir das sementes
 npm run instalador   # regenera supabase/instalar.sql
+npm run artefato     # build da prévia para host estático (rotas por hash)
 ```
 
 ## Documentação

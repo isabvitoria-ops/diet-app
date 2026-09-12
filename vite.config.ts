@@ -8,9 +8,15 @@ import path from "node:path";
 // (check-ins, mensagens, fotos, plano ativo) nunca é cacheado pelo Service
 // Worker — cada domínio busca via Supabase (network) com fallback para a
 // fila local do IndexedDB (ver src/lib/db.ts), nunca via Cache Storage.
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
+    // O build de demonstração (`npm run build:demo`) roda sem PWA: ele é
+    // servido de dentro de uma subpasta e com rotas por hash, onde um
+    // Service Worker instalado só atrapalharia.
+    ...(mode === "demo"
+      ? []
+      : [
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "robots.txt"],
@@ -63,6 +69,7 @@ export default defineConfig({
       },
       devOptions: { enabled: false },
     }),
+        ]),
   ],
   resolve: {
     alias: {
@@ -72,4 +79,4 @@ export default defineConfig({
   server: {
     port: 5173,
   },
-});
+}));

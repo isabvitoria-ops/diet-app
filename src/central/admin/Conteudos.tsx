@@ -130,14 +130,20 @@ function ModalGuia({ guia, aoFechar }: { guia: Guia | null; aoFechar: () => void
   );
   const [tags, definirTags] = useState(linhasDeLista(guia?.tags ?? []));
   const [secoes, definirSecoes] = useState<SecaoGuia[]>(guia?.secoes ?? []);
+  const [aviso, definirAviso] = useState<string | null>(null);
 
   function alterarSecao(indice: number, mudanca: Partial<SecaoGuia>) {
     definirSecoes((atual) => atual.map((s, i) => (i === indice ? { ...s, ...mudanca } : s)));
   }
 
   async function salvar() {
+    definirAviso(null);
+    if (!titulo.trim()) return definirAviso("Escreva o título do guia.");
+    const identificador = guia?.id ?? gerarIdentificador(titulo);
+    if (!identificador) return definirAviso("O título precisa ter pelo menos uma letra ou número.");
+
     const novo: Guia = {
-      id: guia?.id ?? gerarIdentificador(titulo),
+      id: identificador,
       titulo: titulo.trim(),
       tema: tema.trim() || "Outros",
       resumo: resumo.trim() || null,
@@ -146,7 +152,6 @@ function ModalGuia({ guia, aoFechar }: { guia: Guia | null; aoFechar: () => void
       secoes: secoes.filter((s) => s.paragrafos.length > 0 || s.itens.length > 0 || s.titulo),
       tags: listaDeLinhas(tags),
     };
-    if (!novo.titulo) return;
     const deuCerto = await comSalvamento(() => repositorio.salvarGuia(novo));
     if (deuCerto) aoFechar();
   }
@@ -222,9 +227,9 @@ function ModalGuia({ guia, aoFechar }: { guia: Guia | null; aoFechar: () => void
         Adicionar seção
       </button>
 
-      {erro && (
+      {(aviso || erro) && (
         <div className="c-aviso c-aviso-erro" role="alert">
-          <span>{erro}</span>
+          <span>{aviso ?? erro}</span>
         </div>
       )}
 
@@ -266,6 +271,7 @@ function ModalCategoria({
   const [lembretes, definirLembretes] = useState(linhasDeLista(categoria?.lembretes ?? []));
   const [tags, definirTags] = useState(linhasDeLista(categoria?.tags ?? []));
   const [decisoes, definirDecisoes] = useState<DecisaoComerFora[]>(categoria?.decisoes ?? []);
+  const [aviso, definirAviso] = useState<string | null>(null);
 
   function alterarDecisao(indice: number, mudanca: Partial<DecisaoComerFora>) {
     definirDecisoes((atual) => atual.map((d, i) => (i === indice ? { ...d, ...mudanca } : d)));
@@ -282,8 +288,13 @@ function ModalCategoria({
   }
 
   async function salvar() {
+    definirAviso(null);
+    if (!nome.trim()) return definirAviso("Escreva o nome da categoria.");
+    const identificador = categoria?.id ?? gerarIdentificador(nome);
+    if (!identificador) return definirAviso("O nome precisa ter pelo menos uma letra ou número.");
+
     const nova: CategoriaComerFora = {
-      id: categoria?.id ?? gerarIdentificador(nome),
+      id: identificador,
       nome: nome.trim(),
       resumo: resumo.trim() || null,
       icone: icone.trim() || "restaurante",
@@ -294,7 +305,6 @@ function ModalCategoria({
       lembretes: listaDeLinhas(lembretes),
       tags: listaDeLinhas(tags),
     };
-    if (!nova.nome) return;
     const deuCerto = await comSalvamento(() => repositorio.salvarCategoriaComerFora(nova));
     if (deuCerto) aoFechar();
   }
@@ -480,9 +490,9 @@ function ModalCategoria({
         <AreaTexto valor={tags} aoMudar={definirTags} linhas={2} />
       </Campo>
 
-      {erro && (
+      {(aviso || erro) && (
         <div className="c-aviso c-aviso-erro" role="alert">
-          <span>{erro}</span>
+          <span>{aviso ?? erro}</span>
         </div>
       )}
 

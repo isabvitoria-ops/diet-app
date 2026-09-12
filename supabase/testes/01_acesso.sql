@@ -247,6 +247,41 @@ select teste('admin: reativação fica no histórico',
 commit;
 
 -- =============================================================================
+-- 7b. Corrigir o e-mail solta a conta antiga
+-- =============================================================================
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', true);
+
+update pacientes set email = 'outra-ativa@paciente.test' where email = 'ativa@paciente.test';
+select teste(
+  'trocar o e-mail desvincula a conta que estava ligada',
+  (select perfil_id from pacientes where email = 'outra-ativa@paciente.test') is null
+);
+select teste(
+  'e o cadastro volta a ficar como convite pendente',
+  (select status from pacientes where email = 'outra-ativa@paciente.test') = 'convite_pendente'
+);
+commit;
+
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000b1', true);
+select teste('a conta antiga perde o acesso na hora', not tem_acesso());
+commit;
+
+-- Voltar o e-mail religa a mesma conta, sem precisar de novo convite.
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', true);
+update pacientes set email = 'ativa@paciente.test' where email = 'outra-ativa@paciente.test';
+select teste(
+  'voltar o e-mail religa a conta',
+  (select perfil_id from pacientes where email = 'ativa@paciente.test') = '00000000-0000-0000-0000-0000000000b1'
+);
+commit;
+
+-- =============================================================================
 -- 8. Depois da renovação, a paciente volta a entrar
 -- =============================================================================
 begin;

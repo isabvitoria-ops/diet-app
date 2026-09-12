@@ -123,12 +123,20 @@ export const repositorioLocal: Repositorio = {
   },
 
   async criarPaciente(dados: NovoPaciente) {
+    // O banco real tem chave única no e-mail. Repetir a regra aqui é o que
+    // faz o modo demonstração ensinar o comportamento certo — sem isto, a
+    // tela aceitaria em teste um cadastro que a produção recusa.
+    const email = dados.email.toLowerCase().trim();
+    if (guardaPacientes.ler().some((p) => p.email.toLowerCase() === email)) {
+      throw new Error("duplicate key value violates unique constraint pacientes_email_key");
+    }
+
     const paciente: Paciente = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       // Em modo demonstração não há e-mail nem conta: o paciente já nasce
       // vinculado, senão não daria para experimentar as telas seguintes.
       perfilId: `demo-${Date.now()}`,
-      email: dados.email.toLowerCase(),
+      email,
       nome: dados.nome,
       telefone: dados.telefone ?? null,
       planoId: dados.planoId,
@@ -156,7 +164,13 @@ export const repositorioLocal: Repositorio = {
     const pacientes = guardaPacientes.ler();
     const antes = pacientes.find((p) => p.id === id);
     if (!antes) return;
-    const depois = { ...antes, ...alteracao } as Paciente;
+    let depois = { ...antes, ...alteracao } as Paciente;
+
+    // Mesma regra do banco: trocar o e-mail solta a conta que estava ligada,
+    // e o acesso volta a depender de a pessoa entrar com o endereço novo.
+    if (alteracao.email && alteracao.email.toLowerCase() !== antes.email.toLowerCase()) {
+      depois = { ...depois, perfilId: null, status: "convite_pendente" };
+    }
     guardaPacientes.escrever(pacientes.map((p) => (p.id === id ? depois : p)));
 
     if (alteracao.status && alteracao.status !== antes.status) {

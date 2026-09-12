@@ -161,6 +161,11 @@ after insert on auth.users
 for each row execute function ao_criar_usuario();
 
 -- O caminho inverso: a nutricionista cadastra alguém que já tinha conta.
+--
+-- E o caso que faltava: quando ela CORRIGE o e-mail de um paciente já
+-- vinculado, a conta antiga precisa ser solta. Sem isso, o acesso continuaria
+-- valendo para o endereço errado — que é justamente de quem ela quis tirar —
+-- e o cadastro passaria a dizer uma coisa enquanto o banco fazia outra.
 create or replace function vincular_paciente_ao_perfil()
 returns trigger
 language plpgsql
@@ -169,7 +174,16 @@ set search_path = public
 as $$
 declare
   v_perfil uuid;
+  v_email_da_conta citext;
 begin
+  if tg_op = 'UPDATE' and new.perfil_id is not null and new.email is distinct from old.email then
+    select email into v_email_da_conta from perfis where id = new.perfil_id;
+    if v_email_da_conta is distinct from new.email then
+      new.perfil_id := null;
+      new.status := 'convite_pendente';
+    end if;
+  end if;
+
   if new.perfil_id is null then
     select id into v_perfil from perfis where email = new.email limit 1;
     if v_perfil is not null then

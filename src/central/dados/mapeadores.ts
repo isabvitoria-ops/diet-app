@@ -72,6 +72,7 @@ export function paraAlimento(l: Linha): Alimento {
     tags: lista(l.tags),
     imagem: textoOuNulo(l.imagem_url),
     observacao: textoOuNulo(l.observacao),
+    ativo: l.ativo !== false,
   };
 }
 
@@ -84,6 +85,7 @@ export function paraEquivalencia(l: Linha): Equivalencia {
     bidirecional: booleano(l.bidirecional),
     fonte: textoOuNulo(l.fonte),
     observacao: textoOuNulo(l.observacao),
+    ativo: l.ativo !== false,
   };
 }
 

@@ -279,7 +279,17 @@ npm run test:banco     # usa PGHOST=/tmp PGPORT=5433 por padrão
 
 ---
 
-## 8. Modo demonstração
+## 8. Prévia publicada
+
+`npm run artefato` monta uma versão da Central que roda em qualquer host
+estático: caminhos relativos, rotas por hash (`#/trocas`) e sem Service
+Worker. É o que está publicado como prévia — abre no celular, funciona
+inteiro e não encosta em banco nenhum.
+
+Depois de rodar o comando, o que sobe é `dist-demo/artefato.html` mais a pasta
+`dist-demo/assets`. A pasta inteira é descartável e está fora do Git.
+
+## 9. Modo demonstração
 
 Sem as variáveis de ambiente do Supabase, o app abre inteiro com dados de
 exemplo, sem login, e o que for salvo fica só no navegador. Uma faixa amarela
@@ -291,7 +301,7 @@ trabalhando se o Supabase estiver fora do ar.
 
 ---
 
-## 9. O app antigo de acompanhamento
+## 10. O app antigo de acompanhamento
 
 O produto anterior deste repositório (check-in diário, plano alimentar, diário,
 evolução, painel da nutricionista, base TACO) continua inteiro em `src/app/`,
@@ -308,7 +318,7 @@ que a Central usa em `dados/repositorio.ts`.
 
 ---
 
-## 10. Comandos
+## 11. Comandos
 
 ```bash
 npm install
@@ -321,11 +331,12 @@ npm run build
 npm run preview
 npm run seed         # regenera 0004_dados_iniciais.sql das sementes
 npm run instalador   # regenera supabase/instalar.sql
+npm run artefato     # build da prévia para host estático
 ```
 
 ---
 
-## 11. O que já está cadastrado, e o que falta
+## 12. O que já está cadastrado, e o que falta
 
 O briefing pede para não inventar valor nutricional nem recomendação. Tudo
 abaixo veio dos seus materiais; onde eles não dizem, o campo fica vazio e a
@@ -367,7 +378,7 @@ como "sem porção" até você cadastrar.
 "Sexta é dia de variar, não de sair da dieta." Os três estão em Configurações,
 na área da nutricionista, e mudam sem publicar de novo.
 
-## 12. Preparado para depois
+## 13. Preparado para depois
 
 - **Conteúdo por plano ou por paciente**: a coluna `nivel_acesso` já existe em
   `alimentos` e `conteudos`; falta a tabela de exceção por paciente e mais uma

@@ -33,6 +33,7 @@ function alimento(id: string, extra: Partial<Alimento> = {}): Alimento {
     tags: [],
     imagem: null,
     observacao: null,
+    ativo: true,
     ...extra,
   };
 }
@@ -181,6 +182,7 @@ test("regra em tabela interpola entre os pontos cadastrados", () => {
     bidirecional: true,
     fonte: null,
     observacao: null,
+    ativo: true,
   };
   const ctx = contexto([a, b], [eq], [grupo("carbo")]);
   const r = calcularTroca({ alimentoOrigem: a, alimentoDestino: b, medida: g(75) }, ctx);
@@ -206,6 +208,7 @@ test("regra em tabela trava nos extremos em vez de extrapolar", () => {
     bidirecional: false,
     fonte: null,
     observacao: null,
+    ativo: true,
   };
   const ctx = contexto([a, b], [eq], [grupo("carbo", false)]);
   const r = calcularTroca({ alimentoOrigem: a, alimentoDestino: b, medida: g(400) }, ctx);
@@ -226,6 +229,7 @@ test("regra fixa ignora a quantidade informada", () => {
     bidirecional: true,
     fonte: null,
     observacao: null,
+    ativo: true,
   };
   const ctx = contexto([a, b], [eq], [grupo("carbo", false)]);
   const r = calcularTroca({ alimentoOrigem: a, alimentoDestino: b, medida: g(999) }, ctx);
@@ -233,6 +237,29 @@ test("regra fixa ignora a quantidade informada", () => {
   // Regra fixa não tem inverso: no sentido contrário não deve inventar nada.
   const volta = calcularTroca({ alimentoOrigem: b, alimentoDestino: a, medida: { quantidade: 1, unidadeId: "unidade" } }, ctx);
   assert.equal(volta.ok, false);
+});
+
+test("equivalência desativada não vale mais", () => {
+  const a = alimento("a");
+  const b = alimento("b");
+  const eq: Equivalencia = {
+    id: "x",
+    origemAlimentoId: "a",
+    destinoAlimentoId: "b",
+    regra: {
+      tipo: "proporcional",
+      de: { quantidade: 100, unidadeId: "g" },
+      para: { quantidade: 80, unidadeId: "g" },
+    },
+    bidirecional: true,
+    fonte: null,
+    observacao: null,
+    ativo: false,
+  };
+  // O catálogo já filtra o que está desativado; aqui simulamos esse filtro
+  // no contexto, que é como a calculadora recebe as equivalências.
+  const ctx = contexto([a, b], [eq].filter((e) => e.ativo), [grupo("carbo", false)]);
+  assert.equal(calcularTroca({ alimentoOrigem: a, alimentoDestino: b, medida: g(90) }, ctx).ok, false);
 });
 
 // ---------------------------------------------------------------- entradas inválidas

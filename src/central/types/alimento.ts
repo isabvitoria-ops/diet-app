@@ -33,6 +33,11 @@ export interface Alimento {
   tags: string[];
   imagem: string | null;
   observacao: string | null;
+  /**
+   * Visível para os pacientes. Desativar esconde sem apagar — o alimento
+   * continua nas equivalências e no histórico de quem já o usou.
+   */
+  ativo: boolean;
 }
 
 /**

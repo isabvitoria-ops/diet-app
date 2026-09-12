@@ -27,7 +27,7 @@ export function Alimentos() {
     void versao;
     const termo = normalizar(consulta);
     return catalogo
-      .alimentos()
+      .alimentosCadastrados()
       .filter((a) => !termo || normalizar(a.nome).includes(termo) || a.tags.some((t) => normalizar(t).includes(termo)))
       .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
   }, [consulta, versao]);
@@ -38,8 +38,12 @@ export function Alimentos() {
         Alimentos
       </h1>
       <p className="c-subtitulo">
-        {catalogo.alimentos().length} cadastrados ·{" "}
-        {catalogo.alimentos().filter((a) => a.porcao).length} com porção definida.
+        {catalogo.alimentosCadastrados().length} cadastrados ·{" "}
+        {catalogo.alimentosCadastrados().filter((a) => a.porcao).length} com porção definida
+        {catalogo.alimentosCadastrados().some((a) => !a.ativo)
+          ? ` · ${catalogo.alimentosCadastrados().filter((a) => !a.ativo).length} ocultos`
+          : ""}
+        .
       </p>
 
       <div className="c-barra-acoes">
@@ -60,7 +64,9 @@ export function Alimentos() {
                   <span className="c-tabela-apoio">{grupo?.nome ?? alimento.grupoId}</span>
                 </span>
                 <span className="c-tabela-coluna">
-                  {alimento.porcao ? (
+                  {!alimento.ativo ? (
+                    <SeloNeutro>Oculto</SeloNeutro>
+                  ) : alimento.porcao ? (
                     <span className="c-tabela-apoio" style={{ marginTop: 0 }}>
                       1 porção · {textoMedida(alimento.porcao, catalogo.unidade(alimento.porcao.unidadeId))}
                     </span>
@@ -97,18 +103,24 @@ function ModalAlimento({ alimento, aoFechar }: { alimento: Alimento | null; aoFe
   const [semLactose, definirSemLactose] = useState(trinario(alimento?.atributos.semLactose));
   const [tags, definirTags] = useState(linhasDeLista(alimento?.tags ?? []));
   const [observacao, definirObservacao] = useState(alimento?.observacao ?? "");
-  const [ativo, definirAtivo] = useState(true);
+  // Começa no valor atual do alimento, não em "ativo": abrir um item oculto
+  // só para corrigir o nome não pode religá-lo sem ninguém pedir.
+  const [ativo, definirAtivo] = useState(alimento?.ativo ?? true);
   const [aviso, definirAviso] = useState<string | null>(null);
 
   async function salvar() {
     if (!nome.trim()) return definirAviso("Escreva o nome do alimento.");
+    const identificador = alimento?.id ?? gerarIdentificador(nome);
+    if (!identificador) {
+      return definirAviso("O nome precisa ter pelo menos uma letra ou número.");
+    }
     const quantidade = porcao.trim() ? Number(porcao.replace(",", ".")) : null;
     if (porcao.trim() && (!Number.isFinite(quantidade) || quantidade! <= 0)) {
       return definirAviso("A porção precisa ser um número maior que zero.");
     }
 
     const novo: Alimento = {
-      id: alimento?.id ?? gerarIdentificador(nome),
+      id: identificador,
       nome: nome.trim(),
       grupoId,
       unidadeBaseId,
@@ -118,6 +130,7 @@ function ModalAlimento({ alimento, aoFechar }: { alimento: Alimento | null; aoFe
       tags: listaDeLinhas(tags),
       imagem: alimento?.imagem ?? null,
       observacao: observacao.trim() || null,
+      ativo,
     };
 
     const deuCerto = await comSalvamento(() => repositorio.salvarAlimento(novo, ativo));

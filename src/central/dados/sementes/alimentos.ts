@@ -57,6 +57,7 @@ function alimento(e: Entrada): Alimento {
     tags: e.tags ?? [],
     imagem: null,
     observacao: e.observacao ?? null,
+    ativo: true,
   };
 }
 

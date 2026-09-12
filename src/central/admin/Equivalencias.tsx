@@ -25,7 +25,7 @@ export function Equivalencias() {
   const lista = useMemo(() => {
     void versao;
     const termo = normalizar(consulta);
-    return catalogo.equivalencias().filter((e) => {
+    return catalogo.equivalenciasCadastradas().filter((e) => {
       if (!termo) return true;
       const origem = catalogo.alimento(e.origemAlimentoId)?.nome ?? "";
       const destino = catalogo.alimento(e.destinoAlimentoId)?.nome ?? "";
@@ -64,6 +64,7 @@ export function Equivalencias() {
                 <span style={{ flex: 1, minWidth: 200 }}>
                   <span className="c-tabela-nome">{descrever(equivalencia)}</span>
                   <span className="c-tabela-apoio">
+                    {equivalencia.ativo ? "" : "Oculta · "}
                     {equivalencia.bidirecional ? "Vale nos dois sentidos" : "Só neste sentido"}
                     {equivalencia.fonte ? ` · ${equivalencia.fonte}` : ""}
                   </span>
@@ -120,6 +121,7 @@ function ModalEquivalencia({
   );
   const [unidadeDestino, definirUnidadeDestino] = useState(proporcional?.para.unidadeId ?? "g");
   const [bidirecional, definirBidirecional] = useState(equivalencia?.bidirecional ?? true);
+  const [ativa, definirAtiva] = useState(equivalencia?.ativo ?? true);
   const [fonte, definirFonte] = useState(equivalencia?.fonte ?? "Lista de substituição");
   const [observacao, definirObservacao] = useState(equivalencia?.observacao ?? "");
   const [aviso, definirAviso] = useState<string | null>(null);
@@ -145,9 +147,10 @@ function ModalEquivalencia({
       bidirecional,
       fonte: fonte.trim() || null,
       observacao: observacao.trim() || null,
+      ativo: ativa,
     };
 
-    const deuCerto = await comSalvamento(() => repositorio.salvarEquivalencia(nova, true));
+    const deuCerto = await comSalvamento(() => repositorio.salvarEquivalencia(nova, ativa));
     if (deuCerto) aoFechar();
   }
 
@@ -228,6 +231,11 @@ function ModalEquivalencia({
           onChange={(e) => definirBidirecional(e.target.checked)}
         />
         Vale nos dois sentidos
+      </label>
+
+      <label className="c-chip" style={{ marginTop: 10 }}>
+        <input type="checkbox" checked={ativa} onChange={(e) => definirAtiva(e.target.checked)} />
+        No ar para os pacientes
       </label>
 
       <Campo rotulo="Fonte">

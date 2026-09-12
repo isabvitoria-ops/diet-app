@@ -1,6 +1,5 @@
 import { Suspense, lazy } from "react";
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
-import "@/styles/global.css";
+import { BrowserRouter, HashRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import "@/central/styles/central.css";
 import { ProvedorSessao } from "@/central/autenticacao/SessaoContexto";
 import { Carregando, ExigeAcesso, ExigeAdmin, ExigeSessao } from "@/central/autenticacao/Protegido";
@@ -31,6 +30,14 @@ const Consultorio = lazy(() => import("./Consultorio").then((m) => ({ default: m
  * à tela certa. Quem de fato protege o conteúdo é a política de acesso do
  * banco — ver supabase/migracoes/0003_rls.sql.
  */
+/**
+ * Em produção as rotas são endereços normais (`/trocas`), que é o que se
+ * quer num link enviado para paciente. O build de demonstração usa rotas por
+ * hash (`#/trocas`) porque ele é servido por um host estático que não sabe
+ * devolver o index.html para um caminho que não existe como arquivo.
+ */
+const Roteador = import.meta.env.VITE_ROTEADOR === "hash" ? HashRouter : BrowserRouter;
+
 export function App() {
   // O app antigo de acompanhamento (login de teste, dados fictícios em
   // memória) continua no repositório, mas fica fora do ar por padrão: ele
@@ -40,7 +47,7 @@ export function App() {
   const mostrarAppAntigo = import.meta.env.VITE_APP_ANTIGO === "1";
 
   return (
-    <BrowserRouter>
+    <Roteador>
       <ProvedorSessao>
         <Suspense fallback={<Carregando />}>
           <Routes>
@@ -76,7 +83,7 @@ export function App() {
           </Routes>
         </Suspense>
       </ProvedorSessao>
-    </BrowserRouter>
+    </Roteador>
   );
 }
 
