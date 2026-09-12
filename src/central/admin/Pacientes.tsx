@@ -4,15 +4,9 @@ import type { NovoPaciente, Paciente, Plano } from "@/central/types";
 import { usePacientes } from "@/central/hooks/usePacientes";
 import { BarraBusca } from "@/central/components/BarraBusca";
 import { EstadoVazio } from "@/central/components/EstadoVazio";
-import { Selo, SeloNeutro } from "@/central/components/Selo";
+import { SeloSituacao } from "@/central/components/Selo";
 import { normalizar } from "@/central/utils/texto";
-import {
-  dataBonita,
-  hojeSaoPaulo,
-  rotuloSituacao,
-  somarDias,
-  tomSituacao,
-} from "@/central/utils/situacao";
+import { dataBonita, hojeSaoPaulo, somarDias } from "@/central/utils/situacao";
 import { rotas } from "@/central/rotas";
 import { Modal } from "./componentes/Modal";
 import { AreaTexto, Campo, Selecao, Texto } from "./componentes/Campos";
@@ -143,7 +137,6 @@ export function Pacientes() {
 }
 
 function LinhaPaciente({ paciente, aoAbrir }: { paciente: Paciente; aoAbrir: () => void }) {
-  const tom = tomSituacao(paciente.situacao);
   return (
     <div className="c-tabela-linha">
       <button type="button" className="c-tabela-alvo" onClick={aoAbrir}>
@@ -157,11 +150,7 @@ function LinhaPaciente({ paciente, aoAbrir }: { paciente: Paciente; aoAbrir: () 
           </span>
         </span>
         <span className="c-tabela-coluna" style={{ minWidth: 130 }}>
-          {tom === "neutro" ? (
-            <SeloNeutro>{rotuloSituacao(paciente.situacao)}</SeloNeutro>
-          ) : (
-            <Selo nivel={tom} />
-          )}
+          <SeloSituacao situacao={paciente.situacao} />
         </span>
       </button>
     </div>

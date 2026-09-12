@@ -1,14 +1,8 @@
 import { useEffect, useState } from "react";
 import type { EventoHistorico, Paciente, Plano } from "@/central/types";
 import { usePacientes } from "@/central/hooks/usePacientes";
-import { Selo, SeloNeutro } from "@/central/components/Selo";
-import {
-  dataBonita,
-  hojeSaoPaulo,
-  rotuloSituacao,
-  somarDias,
-  tomSituacao,
-} from "@/central/utils/situacao";
+import { SeloSituacao } from "@/central/components/Selo";
+import { dataBonita, hojeSaoPaulo, somarDias } from "@/central/utils/situacao";
 import { Modal } from "./componentes/Modal";
 import { AreaTexto, Campo, Selecao, Texto } from "./componentes/Campos";
 
@@ -55,7 +49,6 @@ export function FichaPaciente({
     void historico(paciente.id).then(definirEventos);
   }, [historico, paciente.id]);
 
-  const tom = tomSituacao(paciente.situacao);
   const suspenso = paciente.status === "suspenso";
 
   async function executar(acao: () => Promise<void>, mensagem: string) {
@@ -68,7 +61,7 @@ export function FichaPaciente({
   return (
     <Modal titulo={paciente.nome} aoFechar={aoFechar}>
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8, flexWrap: "wrap" }}>
-        {tom === "neutro" ? <SeloNeutro>{rotuloSituacao(paciente.situacao)}</SeloNeutro> : <Selo nivel={tom} />}
+        <SeloSituacao situacao={paciente.situacao} />
         <span className="c-dica" style={{ marginTop: 0 }}>{paciente.email}</span>
       </div>
 

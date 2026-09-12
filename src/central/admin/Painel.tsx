@@ -2,7 +2,7 @@ import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePacientes } from "@/central/hooks/usePacientes";
 import { dataBonita, ordenarPorVencimento, rotuloSituacao } from "@/central/utils/situacao";
-import { Selo, SeloNeutro } from "@/central/components/Selo";
+import { SeloNeutro, SeloSituacao } from "@/central/components/Selo";
 import { EstadoVazio } from "@/central/components/EstadoVazio";
 import { rotas } from "@/central/rotas";
 
@@ -90,11 +90,7 @@ export function Painel() {
                     </span>
                   </span>
                   <span className="c-tabela-coluna">
-                    {paciente.situacao === "expirado" ? (
-                      <Selo nivel="ocasional" />
-                    ) : (
-                      <Selo nivel="boa" />
-                    )}
+                    <SeloSituacao situacao={paciente.situacao} />
                   </span>
                 </button>
               </div>

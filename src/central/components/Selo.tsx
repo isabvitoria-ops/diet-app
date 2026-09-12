@@ -1,4 +1,5 @@
-import type { NivelEscolha } from "@/central/types";
+import type { NivelEscolha, SituacaoPaciente } from "@/central/types";
+import { rotuloSituacao, tomSituacao } from "@/central/utils/situacao";
 
 /**
  * Classificação das escolhas (§15).
@@ -19,4 +20,20 @@ export function Selo({ nivel }: { nivel: NivelEscolha }) {
 
 export function SeloNeutro({ children }: { children: React.ReactNode }) {
   return <span className="c-selo neutro">{children}</span>;
+}
+
+/**
+ * Situação de acesso de um paciente.
+ *
+ * Existe separado do `Selo` porque as duas coisas só parecem iguais: as
+ * cores são as mesmas, o vocabulário não. `Selo` fala de comida —
+ * "Melhor escolha", "Boa opção" — e a área administrativa chegou a mostrar
+ * isso no lugar de "Ativo", porque reaproveitava o componente passando só a
+ * cor. Um paciente vencido aparecia como "Mais ocasional".
+ *
+ * Separando, o compilador passa a impedir a troca: aqui entra uma situação,
+ * lá entra um nível de escolha, e não há como confundir de novo.
+ */
+export function SeloSituacao({ situacao }: { situacao: SituacaoPaciente }) {
+  return <span className={`c-selo ${tomSituacao(situacao)}`}>{rotuloSituacao(situacao)}</span>;
 }
