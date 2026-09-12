@@ -1623,3 +1623,40 @@ body:has(.central) {
     display: none;
   }
 }
+
+/* Observações que valem para um bloco de escolhas inteiro, e links dentro
+   do texto dos guias. */
+.c-observacoes {
+  margin: 12px 0 0;
+  padding: 12px 14px 12px 30px;
+  background: var(--primary-soft);
+  border-radius: var(--radius-sm);
+  color: var(--primary-dark);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.c-observacoes li + li {
+  margin-top: 6px;
+}
+
+.c-link-externo {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  word-break: break-word;
+}
+
+/* Lema da Central. Tipografia de título, tamanho de legenda: é uma frase de
+   identidade, não uma instrução — precisa ser notada sem competir com os
+   acessos logo abaixo. */
+.c-lema {
+  margin-top: 24px;
+  margin-bottom: 4px;
+  padding-left: 14px;
+  border-left: 2px solid var(--primary);
+  font-family: var(--font-display);
+  font-size: 16.5px;
+  line-height: 1.4;
+  color: var(--primary-dark);
+}

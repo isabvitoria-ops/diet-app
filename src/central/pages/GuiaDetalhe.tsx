@@ -3,6 +3,7 @@ import { catalogo } from "@/central/dados/catalogo";
 import { CabecalhoPagina } from "@/central/components/CabecalhoPagina";
 import { EstadoVazio } from "@/central/components/EstadoVazio";
 import { BotaoFavorito } from "@/central/components/BotaoFavorito";
+import { TextoComLinks } from "@/central/components/TextoComLinks";
 import { rotas } from "@/central/rotas";
 
 /** Um guia. Enquanto não tiver seções escritas, mostra o estado de preparo. */
@@ -46,12 +47,16 @@ export function GuiaDetalhe() {
             <section className="c-secao c-prosa" key={secao.id}>
               {secao.titulo && <h2 className="c-secao-titulo">{secao.titulo}</h2>}
               {secao.paragrafos.map((paragrafo) => (
-                <p key={paragrafo}>{paragrafo}</p>
+                <p key={paragrafo}>
+                  <TextoComLinks texto={paragrafo} />
+                </p>
               ))}
               {secao.itens.length > 0 && (
                 <ul>
                   {secao.itens.map((item) => (
-                    <li key={item}>{item}</li>
+                    <li key={item}>
+                      <TextoComLinks texto={item} />
+                    </li>
                   ))}
                 </ul>
               )}

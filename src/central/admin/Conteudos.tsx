@@ -346,6 +346,13 @@ function ModalCategoria({
               aoMudar={(v) => alterarDecisao(iDecisao, { pergunta: v })}
             />
           </Campo>
+          <Campo rotulo="Observações desta decisão" dica="Uma por linha. Valem para todas as opções abaixo.">
+            <AreaTexto
+              valor={linhasDeLista(decisao.observacoes)}
+              aoMudar={(v) => alterarDecisao(iDecisao, { observacoes: listaDeLinhas(v) })}
+              linhas={2}
+            />
+          </Campo>
 
           {decisao.opcoes.map((opcao, iOpcao) => (
             <div className="c-bloco" key={iOpcao} style={{ background: "var(--surface)" }}>
@@ -459,7 +466,7 @@ function ModalCategoria({
         onClick={() =>
           definirDecisoes((a) => [
             ...a,
-            { id: `decisao-${a.length + 1}`, titulo: "", pergunta: "", opcoes: [] },
+            { id: `decisao-${a.length + 1}`, titulo: "", pergunta: "", opcoes: [], observacoes: [] },
           ])
         }
       >

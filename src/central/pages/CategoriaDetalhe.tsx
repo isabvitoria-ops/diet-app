@@ -102,6 +102,13 @@ export function CategoriaDetalhe() {
             <section className="c-decisao" key={decisao.id}>
               <h2>{decisao.titulo}</h2>
               {decisao.pergunta && <p className="c-decisao-pergunta">{decisao.pergunta}</p>}
+              {decisao.observacoes.length > 0 && (
+                <ul className="c-observacoes">
+                  {decisao.observacoes.map((nota) => (
+                    <li key={nota}>{nota}</li>
+                  ))}
+                </ul>
+              )}
               {decisao.opcoes.length === 0 ? (
                 <p className="c-contagem">Opções em preparação.</p>
               ) : (

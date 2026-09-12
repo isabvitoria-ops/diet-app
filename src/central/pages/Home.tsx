@@ -90,6 +90,8 @@ export function Home() {
           </button>
         )}
 
+        {configuracoes.lema && <p className="c-lema">{configuracoes.lema}</p>}
+
         {vencendo && (
           <div className="c-aviso" role="status">
             <Icone nome="relogio" tamanho={19} />
@@ -100,17 +102,6 @@ export function Home() {
                 : ` — faltam ${acesso.diasRestantes} ${acesso.diasRestantes === 1 ? "dia" : "dias"}.`}
             </span>
           </div>
-        )}
-
-        {acesso.papel === "admin" && (
-          <button
-            type="button"
-            className="c-botao c-botao-secundario"
-            style={{ marginTop: 16 }}
-            onClick={() => navegar(rotas.admin)}
-          >
-            Abrir a área da nutricionista
-          </button>
         )}
 
         <section className="c-secao">
@@ -135,6 +126,12 @@ export function Home() {
             ))}
           </div>
         </section>
+
+        {acesso.papel === "admin" && (
+          <button type="button" className="c-link" style={{ marginTop: 20 }} onClick={() => navegar(rotas.admin)}>
+            Abrir a área da nutricionista
+          </button>
+        )}
       </div>
     </>
   );

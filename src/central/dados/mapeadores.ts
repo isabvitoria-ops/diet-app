@@ -166,6 +166,7 @@ export function paraEvento(l: Linha): EventoHistorico {
 const PADROES: Configuracoes = {
   nomeCentral: "Central do Paciente",
   fraseHome: "Facilite suas escolhas no dia a dia.",
+  lema: "",
   whatsapp: "",
   nomeNutricionista: "",
   alertaVencimentoDias: 15,
@@ -181,6 +182,7 @@ export function paraConfiguracoes(linhas: Linha[]): Configuracoes {
   return {
     nomeCentral: str("nome_central", PADROES.nomeCentral),
     fraseHome: str("frase_home", PADROES.fraseHome),
+    lema: str("lema", PADROES.lema),
     whatsapp: str("whatsapp", PADROES.whatsapp),
     nomeNutricionista: str("nome_nutricionista", PADROES.nomeNutricionista),
     alertaVencimentoDias: Number(mapa.get("alerta_vencimento_dias") ?? PADROES.alertaVencimentoDias),

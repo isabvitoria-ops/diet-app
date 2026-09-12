@@ -243,9 +243,10 @@ Nenhuma regra do arquivo escreve cor no meio do caminho. Depois de mexer, rode
 `npm test`: há um teste que confere o contraste de cada par que aparece na tela
 contra a régua da WCAG e diz qual combinação reprovou e por quanto.
 
-### Mudar o WhatsApp e o nome da Central
+### Mudar o WhatsApp, o nome e o lema
 
-Área da nutricionista → **Configurações**. Não precisa publicar de novo.
+Área da nutricionista → **Configurações**. Não precisa publicar de novo. O lema
+é a frase de identidade da tela inicial; deixar em branco esconde a linha.
 
 ---
 
@@ -324,25 +325,47 @@ npm run instalador   # regenera supabase/instalar.sql
 
 ---
 
-## 11. O que ainda não tem dado
+## 11. O que já está cadastrado, e o que falta
 
-O briefing pede para não inventar valor nutricional nem equivalência. Está
-cadastrado só o que veio de você:
+O briefing pede para não inventar valor nutricional nem recomendação. Tudo
+abaixo veio dos seus materiais; onde eles não dizem, o campo fica vazio e a
+tela mostra o estado de preparo.
 
-- **1 equivalência**: 100 g de arroz = 80 g de macarrão.
-- **2 alimentos com porção**: arroz (100 g, informado por você) e macarrão
-  (80 g, aritmética direta sobre a equivalência acima).
-- **27 vegetais livres**, com a regra de 150 g no almoço e no jantar.
-- **Comer fora**: as opções de comida japonesa e as duas montagens de
-  hambúrguer que você descreveu; massas e doces com as decisões mapeadas e as
-  opções em branco.
-- **Guias**: os 11 temas reservados, todos sem conteúdo.
+**Do guia de refeição livre** — em Comer fora, sete categorias publicadas:
 
-Tudo o mais aparece como "sem porção", "rascunho" ou "em preparação". Conforme
-você for passando o material, dá para cadastrar pela área da nutricionista, sem
-mexer em código.
+| Categoria | O que tem |
+|---|---|
+| Refeição livre | As 3 completas, as 7 meias, as bebidas e a conta (2 meias = 1 completa) |
+| Hambúrguer | Montagem simples × densa, e a montagem completa do material |
+| Comida japonesa | Entradas, combinados, temaki, fritos e molhos cremosos, com as 4 observações |
+| Massas | As 3 montagens, com molho ao sugo, proteína e a dica do Spoleto |
+| Pizza | 3 fatias de massa fina ou 2 de massa grossa, com a nota do recheio |
+| Açaí | 500 ml como completa, 300 ml como meia |
+| Doces e sobremesas | As 6 meias refeições doces |
 
----
+Subway, Restaurantes e Delivery seguem reservados, sem conteúdo.
+
+**Do guia de supermercado** — três guias no tema Compras: a regra de ouro dos
+rótulos, as marcas por categoria (iogurte, pão de forma, geleia, frutas e
+vegetais congelados, prontos) e a lista de proteínas para ter em casa.
+
+**Do e-book de marmitas** — três guias no tema Marmitas: por onde começar
+(higienização e armazenamento das frutas), as nove receitas da semana, e os
+atalhos de quem está sem tempo, com os links de compra já clicáveis.
+
+**Ainda sem conteúdo:** o guia "Variar em casa" (reservado para as suas ideias
+de variação), os quatro guias de Digestão, os dois de Restrições, e
+Industrializados, Doces, Álcool e Comer fora no tema do dia a dia.
+
+**No catálogo de alimentos**, segue valendo o que veio da lista de
+substituição: 1 equivalência (100 g de arroz = 80 g de macarrão), 2 alimentos
+com porção e os 27 vegetais livres com a regra de 150 g. Os demais aparecem
+como "sem porção" até você cadastrar.
+
+**Conferir antes de publicar:** o WhatsApp `(31) 99450-3318` e o nome
+`Isabela Marçal` foram lidos do rodapé dos seus materiais, e o lema entrou como
+"Sexta é dia de variar, não de sair da dieta." Os três estão em Configurações,
+na área da nutricionista, e mudam sem publicar de novo.
 
 ## 12. Preparado para depois
 

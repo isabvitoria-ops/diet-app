@@ -217,6 +217,7 @@ export const repositorioLocal: Repositorio = {
     guardaConfiguracoes.escrever([
       ["nome_central", configuracoes.nomeCentral],
       ["frase_home", configuracoes.fraseHome],
+      ["lema", configuracoes.lema],
       ["whatsapp", configuracoes.whatsapp],
       ["nome_nutricionista", configuracoes.nomeNutricionista],
       ["alerta_vencimento_dias", configuracoes.alertaVencimentoDias],

@@ -80,6 +80,8 @@ export interface Acesso {
 export interface Configuracoes {
   nomeCentral: string;
   fraseHome: string;
+  /** Frase curta de identidade, exibida na tela inicial. */
+  lema: string;
   whatsapp: string;
   nomeNutricionista: string;
   alertaVencimentoDias: number;

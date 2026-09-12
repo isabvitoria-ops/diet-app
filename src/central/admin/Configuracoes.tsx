@@ -16,6 +16,7 @@ export function ConfiguracoesAdmin() {
   const { comSalvamento, salvando, erro } = useCatalogo();
   const [nomeCentral, definirNomeCentral] = useState(configuracoes.nomeCentral);
   const [fraseHome, definirFraseHome] = useState(configuracoes.fraseHome);
+  const [lema, definirLema] = useState(configuracoes.lema);
   const [whatsapp, definirWhatsapp] = useState(configuracoes.whatsapp);
   const [nomeNutricionista, definirNome] = useState(configuracoes.nomeNutricionista);
   const [alerta, definirAlerta] = useState(String(configuracoes.alertaVencimentoDias));
@@ -34,6 +35,7 @@ export function ConfiguracoesAdmin() {
       await repositorio.salvarConfiguracoes({
         nomeCentral: nomeCentral.trim() || "Central do Paciente",
         fraseHome: fraseHome.trim(),
+        lema: lema.trim(),
         whatsapp: numeroLimpo,
         nomeNutricionista: nomeNutricionista.trim(),
         alertaVencimentoDias: Math.max(1, Number(alerta) || 15),
@@ -58,6 +60,9 @@ export function ConfiguracoesAdmin() {
         </Campo>
         <Campo rotulo="Frase da tela inicial">
           <Texto valor={fraseHome} aoMudar={definirFraseHome} />
+        </Campo>
+        <Campo rotulo="Lema" dica="Frase curta de identidade. Deixe em branco para não mostrar.">
+          <Texto valor={lema} aoMudar={definirLema} />
         </Campo>
         <Campo rotulo="Seu nome">
           <Texto valor={nomeNutricionista} aoMudar={definirNome} />

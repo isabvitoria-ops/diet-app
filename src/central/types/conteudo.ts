@@ -40,6 +40,12 @@ export interface DecisaoComerFora {
   titulo: string;
   pergunta: string | null;
   opcoes: OpcaoComerFora[];
+  /**
+   * Notas que valem para a decisão inteira, não para uma opção só — é a
+   * forma como os materiais da nutricionista são escritos ("prefira molho ao
+   * sugo", "sugiro 20 peças", "shoyu tradicional ou light").
+   */
+  observacoes: string[];
 }
 
 export type StatusConteudo = "publicado" | "em-preparacao";

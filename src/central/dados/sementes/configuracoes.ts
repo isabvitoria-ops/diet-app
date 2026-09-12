@@ -23,13 +23,20 @@ export const CONFIGURACOES: Configuracao[] = [
     descricao: "Frase da tela inicial.",
   },
   {
+    chave: "lema",
+    // Frase de identidade da Central. Está aqui, e não no código, porque é
+    // a parte mais provável de mudar: trocar é editar um campo na tela.
+    valor: "Sexta é dia de variar, não de sair da dieta.",
+    descricao: "Frase curta de identidade, exibida na tela inicial. Deixe em branco para não mostrar.",
+  },
+  {
     chave: "whatsapp",
-    valor: "",
+    valor: "5531994503318",
     descricao: "Número do WhatsApp da nutricionista, só dígitos com DDI e DDD (ex.: 5511999999999).",
   },
   {
     chave: "nome_nutricionista",
-    valor: "",
+    valor: "Isabela Marçal",
     descricao: "Nome que aparece nos textos de contato.",
   },
   {
