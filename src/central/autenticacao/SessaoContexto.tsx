@@ -5,6 +5,7 @@ import { repositorio } from "@/central/dados/repositorio";
 import { hidratar } from "@/central/dados/catalogo";
 import { invalidarIndice } from "@/central/dados/indiceBusca";
 import { CONFIGURACOES_PADRAO } from "@/central/dados/mapeadores";
+import { urlDaRota } from "@/central/utils/enderecos";
 import { useFavoritos } from "@/central/hooks/useFavoritos";
 
 /**
@@ -152,7 +153,7 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
         if (!supabase) return;
         const { error } = await supabase.auth.signInWithOtp({
           email: email.trim().toLowerCase(),
-          options: { emailRedirectTo: `${window.location.origin}/definir-senha` },
+          options: { emailRedirectTo: urlDaRota("/definir-senha") },
         });
         if (error) throw new Error(traduzir(error.message));
       },
@@ -166,7 +167,7 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
       async enviarRecuperacao(email) {
         if (!supabase) return;
         const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-          redirectTo: `${window.location.origin}/definir-senha`,
+          redirectTo: urlDaRota("/definir-senha"),
         });
         if (error) throw new Error(traduzir(error.message));
       },

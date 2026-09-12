@@ -11,6 +11,7 @@ import type {
   Plano,
 } from "@/central/types";
 import { exigirSupabase } from "@/central/supabase/cliente";
+import { urlDaRota } from "@/central/utils/enderecos";
 import {
   paraAlimento,
   paraCategoriaComerFora,
@@ -191,7 +192,7 @@ export const repositorioSupabase: Repositorio = {
       email: email.toLowerCase().trim(),
       options: {
         shouldCreateUser: true,
-        emailRedirectTo: `${window.location.origin}/definir-senha`,
+        emailRedirectTo: urlDaRota("/definir-senha"),
       },
     });
     erro("enviar convite", erroEnvio);
