@@ -289,6 +289,23 @@ inteiro e não encosta em banco nenhum.
 Depois de rodar o comando, o que sobe é `dist-demo/artefato.html` mais a pasta
 `dist-demo/assets`. A pasta inteira é descartável e está fora do Git.
 
+### Arquivo único
+
+`npm run html-unico` gera **`site/index.html`**: a Central inteira num
+arquivo só, com o código, o estilo e as duas fontes embutidos. Cerca de 1 MB.
+
+Abre com dois cliques, sem servidor, sem internet e sem pasta de apoio — dá
+para mandar por e-mail, guardar num pendrive ou subir em qualquer hospedagem
+que sirva arquivo estático. É o mesmo conteúdo da prévia publicada.
+
+O gerador confere duas coisas antes de escrever: que não sobrou nada
+buscando a internet dentro do CSS, e que as fontes continuam lá depois do
+corte. Se qualquer uma falhar, ele para em vez de gerar um arquivo quebrado.
+
+> O arquivo NÃO vai para a raiz do projeto. O `index.html` de lá é o molde
+> que o Vite usa para montar o app — sobrescrever aquele arquivo quebraria o
+> build.
+
 ## 9. Modo demonstração
 
 Sem as variáveis de ambiente do Supabase, o app abre inteiro com dados de
@@ -332,6 +349,7 @@ npm run preview
 npm run seed         # regenera 0004_dados_iniciais.sql das sementes
 npm run instalador   # regenera supabase/instalar.sql
 npm run artefato     # build da prévia para host estático
+npm run html-unico   # gera site/index.html, a Central num arquivo só
 ```
 
 ---

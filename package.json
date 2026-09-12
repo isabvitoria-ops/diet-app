@@ -15,7 +15,9 @@
     "test:banco": "./scripts/testar-banco.sh",
     "instalador": "node scripts/gerar-instalador.mjs",
     "build:demo": "VITE_ROTEADOR=hash vite build --mode demo --base ./ --outDir dist-demo",
-    "artefato": "npm run build:demo && node scripts/gerar-artefato.mjs"
+    "artefato": "npm run build:demo && node scripts/gerar-artefato.mjs",
+    "build:unico": "VITE_ROTEADOR=hash vite build --mode unico",
+    "html-unico": "npm run build:unico && node scripts/gerar-html-unico.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

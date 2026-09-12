@@ -14,7 +14,7 @@ module.exports = {
     ecmaFeatures: { jsx: true },
   },
   plugins: ["@typescript-eslint", "react-refresh"],
-  ignorePatterns: ["dist", "dist-demo", "node_modules", "*.config.ts", "*.config.js"],
+  ignorePatterns: ["dist", "dist-demo", "dist-unico", "site", "node_modules", "*.config.ts", "*.config.js"],
   rules: {
     "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
     "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],

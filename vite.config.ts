@@ -11,10 +11,10 @@ import path from "node:path";
 export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
-    // O build de demonstração (`npm run build:demo`) roda sem PWA: ele é
-    // servido de dentro de uma subpasta e com rotas por hash, onde um
+    // Os builds de prévia (`demo`, servido de uma subpasta, e `unico`, um
+    // arquivo só) rodam sem PWA: com rotas por hash e endereço de teste, um
     // Service Worker instalado só atrapalharia.
-    ...(mode === "demo"
+    ...(mode === "demo" || mode === "unico"
       ? []
       : [
     VitePWA({
@@ -76,6 +76,22 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  /**
+   * O modo `unico` gera a Central num arquivo HTML só, que abre com dois
+   * cliques e funciona sem servidor nenhum. Para isso, duas coisas mudam:
+   * nada de dividir o código em pedaços carregados sob demanda (não haveria
+   * de onde carregá-los), e todo recurso vira base64 dentro do próprio
+   * pacote, fontes inclusive.
+   */
+  build:
+    mode === "unico"
+      ? {
+          outDir: "dist-unico",
+          assetsInlineLimit: 20_000_000,
+          rollupOptions: { output: { inlineDynamicImports: true } },
+        }
+      : {},
+
   server: {
     port: 5173,
   },

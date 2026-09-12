@@ -8,3 +8,4 @@ dist-ssr
 *.tsbuildinfo
 .claude/worktrees/
 dist-demo
+dist-unico
