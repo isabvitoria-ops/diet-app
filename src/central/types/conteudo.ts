@@ -48,18 +48,49 @@ export interface DecisaoComerFora {
   observacoes: string[];
 }
 
+/**
+ * Uma casa: McDonald's dentro de Hambúrguer, Spoleto dentro de Massas.
+ *
+ * É o nível que faltava. As `decisoes` respondem "como montar esta refeição";
+ * o estabelecimento responde "e naquele lugar ali, o que eu peço?" — que é a
+ * pergunta que a paciente realmente faz parada na frente do balcão.
+ *
+ * `grupo` é o que separa lanchonete de artesanal na tela; `logo` é a marca,
+ * que a nutricionista envia pelo painel. Sem logo, a tela desenha a inicial
+ * num círculo em vez de deixar um buraco.
+ */
+export interface EstabelecimentoComerFora {
+  id: string;
+  nome: string;
+  /** Agrupa na tela: "Lanchonetes", "Artesanais", "Rodízios"… */
+  grupo: string | null;
+  /** Logo da marca, como URL ou data URI. */
+  logo: string | null;
+  resumo: string | null;
+  ordem: number;
+  opcoes: OpcaoComerFora[];
+  observacoes: string[];
+}
+
 export type StatusConteudo = "publicado" | "em-preparacao";
 
 export interface CategoriaComerFora {
   id: string;
   nome: string;
   resumo: string | null;
-  /** Chave do ícone em `components/Icone.tsx`. */
+  /** Chave do ícone em `components/Icone.tsx`. Usado quando não há logo. */
   icone: string;
+  /**
+   * Logo da marca, quando a categoria É uma marca — Subway, por exemplo.
+   * `null` cai no ícone, que é o caso das categorias genéricas (Pizza).
+   */
+  logo: string | null;
   ordem: number;
   status: StatusConteudo;
   introducao: string | null;
   decisoes: DecisaoComerFora[];
+  /** As casas desta categoria. Vazio = a categoria só tem as decisões. */
+  estabelecimentos: EstabelecimentoComerFora[];
   /** Fecho da tela: lembretes curtos, quando houver. */
   lembretes: string[];
   tags: string[];

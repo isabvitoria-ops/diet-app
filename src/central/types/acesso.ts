@@ -82,6 +82,8 @@ export interface Configuracoes {
   fraseHome: string;
   /** Frase curta de identidade, exibida na tela inicial. */
   lema: string;
+  /** Frase no topo de Comer fora. Vazia = não aparece. */
+  comerForaIntroducao: string;
   whatsapp: string;
   nomeNutricionista: string;
   alertaVencimentoDias: number;

@@ -7,6 +7,7 @@ import { Substituicoes } from "./pages/Substituicoes";
 import { GrupoDetalhe } from "./pages/GrupoDetalhe";
 import { ComerFora } from "./pages/ComerFora";
 import { CategoriaDetalhe } from "./pages/CategoriaDetalhe";
+import { EstabelecimentoDetalhe } from "./pages/EstabelecimentoDetalhe";
 import { Guias } from "./pages/Guias";
 import { GuiaDetalhe } from "./pages/GuiaDetalhe";
 import { Salvos } from "./pages/Salvos";
@@ -42,6 +43,10 @@ export function CentralApp() {
           <Route path="substituicoes/:grupoId" element={<GrupoDetalhe />} />
           <Route path="comer-fora" element={<ComerFora />} />
           <Route path="comer-fora/:categoriaId" element={<CategoriaDetalhe />} />
+          <Route
+            path="comer-fora/:categoriaId/:estabelecimentoId"
+            element={<EstabelecimentoDetalhe />}
+          />
           <Route path="guias" element={<Guias />} />
           <Route path="guias/:guiaId" element={<GuiaDetalhe />} />
           <Route path="salvos" element={<Salvos />} />

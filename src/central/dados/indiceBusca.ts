@@ -93,6 +93,28 @@ export function indiceBusca(): ItemIndice[] {
       rota: rotas.categoria(categoria.id),
       palavras: categoria.tags,
     });
+    // As casas entram na busca pelo nome da marca: quem procura "mcdonalds"
+    // quer cair no McDonald's, não na categoria Hambúrguer.
+    for (const casa of categoria.estabelecimentos) {
+      itens.push({
+        id: `casa:${categoria.id}:${casa.id}`,
+        tipo: "categoria",
+        titulo: casa.nome,
+        subtitulo: casa.resumo ?? categoria.nome,
+        rota: rotas.estabelecimento(categoria.id, casa.id),
+        palavras: [categoria.nome, casa.grupo ?? ""].filter(Boolean),
+      });
+      for (const opcao of casa.opcoes) {
+        itens.push({
+          id: `opcao:${categoria.id}:${casa.id}:${opcao.id}`,
+          tipo: "opcao",
+          titulo: opcao.titulo,
+          subtitulo: `${categoria.nome} · ${casa.nome}`,
+          rota: rotas.estabelecimento(categoria.id, casa.id),
+          palavras: [...opcao.tags, categoria.nome, casa.nome],
+        });
+      }
+    }
     for (const decisao of categoria.decisoes) {
       for (const opcao of decisao.opcoes) {
         itens.push({

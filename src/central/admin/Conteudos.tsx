@@ -1,9 +1,19 @@
 import { useMemo, useState } from "react";
-import type { CategoriaComerFora, DecisaoComerFora, Guia, NivelEscolha, OpcaoComerFora, SecaoGuia } from "@/central/types";
+import type {
+  CategoriaComerFora,
+  DecisaoComerFora,
+  EstabelecimentoComerFora,
+  Guia,
+  NivelEscolha,
+  OpcaoComerFora,
+  SecaoGuia,
+} from "@/central/types";
 import { catalogo } from "@/central/dados/catalogo";
 import { repositorio } from "@/central/dados/repositorio";
 import { gerarIdentificador, useCatalogo } from "@/central/hooks/useCatalogo";
 import { SeloNeutro } from "@/central/components/Selo";
+import { CampoLogo } from "./componentes/CampoLogo";
+import { EditorEstabelecimentos } from "./componentes/EditorEstabelecimentos";
 import { Modal } from "./componentes/Modal";
 import { AreaTexto, Campo, Selecao, Texto, linhasDeLista, listaDeLinhas } from "./componentes/Campos";
 
@@ -271,6 +281,10 @@ function ModalCategoria({
   const [lembretes, definirLembretes] = useState(linhasDeLista(categoria?.lembretes ?? []));
   const [tags, definirTags] = useState(linhasDeLista(categoria?.tags ?? []));
   const [decisoes, definirDecisoes] = useState<DecisaoComerFora[]>(categoria?.decisoes ?? []);
+  const [logo, definirLogo] = useState<string | null>(categoria?.logo ?? null);
+  const [estabelecimentos, definirEstabelecimentos] = useState<EstabelecimentoComerFora[]>(
+    categoria?.estabelecimentos ?? [],
+  );
   const [aviso, definirAviso] = useState<string | null>(null);
 
   function alterarDecisao(indice: number, mudanca: Partial<DecisaoComerFora>) {
@@ -298,10 +312,12 @@ function ModalCategoria({
       nome: nome.trim(),
       resumo: resumo.trim() || null,
       icone: icone.trim() || "restaurante",
+      logo,
       ordem: Number(ordem) || 99,
       status: status === "publicado" ? "publicado" : "em-preparacao",
       introducao: introducao.trim() || null,
       decisoes,
+      estabelecimentos: estabelecimentos.filter((e) => e.nome.trim() !== ""),
       lembretes: listaDeLinhas(lembretes),
       tags: listaDeLinhas(tags),
     };
@@ -331,6 +347,14 @@ function ModalCategoria({
       <Campo rotulo="Introdução">
         <AreaTexto valor={introducao} aoMudar={definirIntroducao} linhas={3} />
       </Campo>
+
+      <CampoLogo nome={nome} logo={logo} aoMudar={definirLogo} />
+      <p className="c-dica">
+        Use quando a categoria for uma marca — Subway, por exemplo. Com logo, ela aparece no lugar
+        do ícone na grade de Comer fora.
+      </p>
+
+      <EditorEstabelecimentos estabelecimentos={estabelecimentos} aoMudar={definirEstabelecimentos} />
 
       <h3 className="c-secao-titulo" style={{ marginTop: 22 }}>
         Decisões da refeição

@@ -302,6 +302,7 @@ export const repositorioSupabase: Repositorio = {
       { chave: "nome_central", valor: configuracoes.nomeCentral },
       { chave: "frase_home", valor: configuracoes.fraseHome },
       { chave: "lema", valor: configuracoes.lema },
+      { chave: "comer_fora_introducao", valor: configuracoes.comerForaIntroducao },
       { chave: "whatsapp", valor: configuracoes.whatsapp },
       { chave: "nome_nutricionista", valor: configuracoes.nomeNutricionista },
       { chave: "alerta_vencimento_dias", valor: configuracoes.alertaVencimentoDias },

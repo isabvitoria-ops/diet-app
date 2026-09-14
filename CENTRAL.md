@@ -392,19 +392,33 @@ O briefing pede para não inventar valor nutricional nem recomendação. Tudo
 abaixo veio dos seus materiais; onde eles não dizem, o campo fica vazio e a
 tela mostra o estado de preparo.
 
-**Do guia de refeição livre** — em Comer fora, sete categorias publicadas:
+**Comer fora** tem dois níveis. A categoria responde "como montar esta
+refeição"; a casa dentro dela responde "e naquele lugar ali, o que eu peço?".
 
 | Categoria | O que tem |
 |---|---|
-| Refeição livre | As 3 completas, as 7 meias, as bebidas e a conta (2 meias = 1 completa) |
-| Hambúrguer | Montagem simples × densa, e a montagem completa do material |
+| Hambúrguer | As montagens do material, mais três casas: McDonald's e Burger King em *Lanchonetes*, Artesanal em *Artesanais* — cada uma com melhor escolha, boa opção e mais ocasional |
+| Subway | As três montagens do balcão, com kcal |
 | Comida japonesa | Entradas, combinados, temaki, fritos e molhos cremosos, com as 4 observações |
-| Massas | As 3 montagens, com molho ao sugo, proteína e a dica do Spoleto |
+| Massas | As 3 montagens, com molho ao sugo, proteína e a dica do Spoleto; o Spoleto já está como casa, sem opções |
 | Pizza | 3 fatias de massa fina ou 2 de massa grossa, com a nota do recheio |
 | Açaí | 500 ml como completa, 300 ml como meia |
 | Doces e sobremesas | As 6 meias refeições doces |
 
-Subway, Restaurantes e Delivery seguem reservados, sem conteúdo.
+Restaurantes e Delivery seguem reservados, sem conteúdo.
+
+**A aba "Refeição livre" saiu** a pedido dela. A conta que morava lá (duas
+meias equivalem a uma completa) não era de uma categoria só — vale para a
+seção inteira —, então virou a configuração `comer_fora_introducao`: aparece
+no topo de Comer fora e ela edita pelo painel, sem publicar de novo.
+
+**Logos**: `logo` existe na casa e na categoria, guardado como data URI dentro
+do próprio cadastro. Não é bucket de arquivo de propósito — a logo precisa
+aparecer também na versão de arquivo único, que roda sem rede. O painel reduz
+a imagem para 128 px antes de gravar, recusa SVG com script dentro, e sem logo
+a tela desenha a inicial num círculo em vez de deixar buraco. McDonald's e
+Burger King vieram do simple-icons (CC0); "Artesanal" não é marca, então leva
+uma ilustração desenhada, não uma foto. As demais a nutricionista envia.
 
 **Do guia de supermercado** — três guias no tema Compras: a regra de ouro dos
 rótulos, as marcas por categoria (iogurte, pão de forma, geleia, frutas e

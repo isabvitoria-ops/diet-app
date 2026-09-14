@@ -95,6 +95,8 @@ export function paraCategoriaComerFora(l: Linha): CategoriaComerFora {
   const corpo = (l.corpo ?? {}) as {
     introducao?: string | null;
     decisoes?: CategoriaComerFora["decisoes"];
+    estabelecimentos?: CategoriaComerFora["estabelecimentos"];
+    logo?: string | null;
     lembretes?: string[];
   };
   return {
@@ -102,10 +104,12 @@ export function paraCategoriaComerFora(l: Linha): CategoriaComerFora {
     nome: texto(l.titulo),
     resumo: textoOuNulo(l.resumo),
     icone: texto(l.icone) || "restaurante",
+    logo: corpo.logo ?? null,
     ordem: numero(l.ordem),
     status: l.status === "publicado" ? "publicado" : "em-preparacao",
     introducao: corpo.introducao ?? null,
     decisoes: corpo.decisoes ?? [],
+    estabelecimentos: corpo.estabelecimentos ?? [],
     lembretes: corpo.lembretes ?? [],
     tags: lista(l.tags),
   };
@@ -171,6 +175,7 @@ const PADROES: Configuracoes = {
   nomeCentral: "Central do Paciente",
   fraseHome: "Facilite suas escolhas no dia a dia.",
   lema: "",
+  comerForaIntroducao: "",
   whatsapp: "",
   nomeNutricionista: "",
   alertaVencimentoDias: 15,
@@ -187,6 +192,7 @@ export function paraConfiguracoes(linhas: Linha[]): Configuracoes {
     nomeCentral: str("nome_central", PADROES.nomeCentral),
     fraseHome: str("frase_home", PADROES.fraseHome),
     lema: str("lema", PADROES.lema),
+    comerForaIntroducao: str("comer_fora_introducao", PADROES.comerForaIntroducao),
     whatsapp: str("whatsapp", PADROES.whatsapp),
     nomeNutricionista: str("nome_nutricionista", PADROES.nomeNutricionista),
     alertaVencimentoDias: Number(mapa.get("alerta_vencimento_dias") ?? PADROES.alertaVencimentoDias),

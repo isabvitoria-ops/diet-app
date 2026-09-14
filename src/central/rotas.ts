@@ -17,6 +17,8 @@ export const rotas = {
   grupo: (grupoId: string) => `/substituicoes/${grupoId}`,
   comerFora: "/comer-fora",
   categoria: (categoriaId: string) => `/comer-fora/${categoriaId}`,
+  estabelecimento: (categoriaId: string, estabelecimentoId: string) =>
+    `/comer-fora/${categoriaId}/${estabelecimentoId}`,
   opcao: (categoriaId: string, opcaoId: string) =>
     `/comer-fora/${categoriaId}?opcao=${encodeURIComponent(opcaoId)}`,
   guias: "/guias",

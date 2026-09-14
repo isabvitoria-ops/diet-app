@@ -30,6 +30,15 @@ export const CONFIGURACOES: Configuracao[] = [
     descricao: "Frase curta de identidade, exibida na tela inicial. Deixe em branco para não mostrar.",
   },
   {
+    chave: "comer_fora_introducao",
+    // Estava na aba "Refeição livre", que saiu do ar a pedido dela. A conta
+    // não é de uma categoria só — vale para a seção inteira —, então virou
+    // configuração: aparece no topo de Comer fora e ela edita pelo painel.
+    valor:
+      "Duas meias refeições equivalem a uma completa. Uma completa mais uma meia equivalem a uma refeição e meia.",
+    descricao: "Frase no topo de Comer fora. Deixe em branco para não mostrar.",
+  },
+  {
     chave: "whatsapp",
     valor: "5531994503318",
     descricao: "Número do WhatsApp da nutricionista, só dígitos com DDI e DDD (ex.: 5511999999999).",

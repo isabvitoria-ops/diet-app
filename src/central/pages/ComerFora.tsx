@@ -2,6 +2,8 @@ import { useNavigate } from "react-router-dom";
 import { catalogo } from "@/central/dados/catalogo";
 import { CabecalhoPagina } from "@/central/components/CabecalhoPagina";
 import { Icone } from "@/central/components/Icone";
+import { Logo } from "@/central/components/Logo";
+import { useSessao } from "@/central/autenticacao/SessaoContexto";
 import { rotas } from "@/central/rotas";
 
 /**
@@ -14,6 +16,7 @@ import { rotas } from "@/central/rotas";
  */
 export function ComerFora() {
   const navegar = useNavigate();
+  const { configuracoes } = useSessao();
   const categorias = catalogo.categoriasComerFora();
   const prontas = categorias.filter((c) => c.status === "publicado");
   const emBreve = categorias.filter((c) => c.status !== "publicado");
@@ -27,6 +30,10 @@ export function ComerFora() {
       />
 
       <div className="c-conteudo">
+        {configuracoes.comerForaIntroducao && (
+          <p className="c-intro">{configuracoes.comerForaIntroducao}</p>
+        )}
+
         <section className="c-secao">
           <div className="c-grade">
             {prontas.map((categoria) => (
@@ -36,9 +43,13 @@ export function ComerFora() {
                 className="c-categoria"
                 onClick={() => navegar(rotas.categoria(categoria.id))}
               >
-                <span className="c-categoria-icone">
-                  <Icone nome={categoria.icone} tamanho={21} />
-                </span>
+                {categoria.logo ? (
+                  <Logo nome={categoria.nome} logo={categoria.logo} tamanho={40} />
+                ) : (
+                  <span className="c-categoria-icone">
+                    <Icone nome={categoria.icone} tamanho={21} />
+                  </span>
+                )}
                 <span>
                   <h3>{categoria.nome}</h3>
                   {categoria.resumo && <p>{categoria.resumo}</p>}
@@ -59,9 +70,13 @@ export function ComerFora() {
                   className="c-categoria pendente"
                   onClick={() => navegar(rotas.categoria(categoria.id))}
                 >
-                  <span className="c-categoria-icone">
-                    <Icone nome={categoria.icone} tamanho={21} />
-                  </span>
+                  {categoria.logo ? (
+                    <Logo nome={categoria.nome} logo={categoria.logo} tamanho={40} />
+                  ) : (
+                    <span className="c-categoria-icone">
+                      <Icone nome={categoria.icone} tamanho={21} />
+                    </span>
+                  )}
                   <span>
                     <h3>{categoria.nome}</h3>
                     <p>Em preparação</p>

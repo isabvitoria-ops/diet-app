@@ -17,6 +17,7 @@ export function ConfiguracoesAdmin() {
   const [nomeCentral, definirNomeCentral] = useState(configuracoes.nomeCentral);
   const [fraseHome, definirFraseHome] = useState(configuracoes.fraseHome);
   const [lema, definirLema] = useState(configuracoes.lema);
+  const [comerFora, definirComerFora] = useState(configuracoes.comerForaIntroducao);
   const [whatsapp, definirWhatsapp] = useState(configuracoes.whatsapp);
   const [nomeNutricionista, definirNome] = useState(configuracoes.nomeNutricionista);
   const [alerta, definirAlerta] = useState(String(configuracoes.alertaVencimentoDias));
@@ -36,6 +37,7 @@ export function ConfiguracoesAdmin() {
         nomeCentral: nomeCentral.trim() || "Central do Paciente",
         fraseHome: fraseHome.trim(),
         lema: lema.trim(),
+        comerForaIntroducao: comerFora.trim(),
         whatsapp: numeroLimpo,
         nomeNutricionista: nomeNutricionista.trim(),
         alertaVencimentoDias: Math.max(1, Number(alerta) || 15),
@@ -63,6 +65,12 @@ export function ConfiguracoesAdmin() {
         </Campo>
         <Campo rotulo="Lema" dica="Frase curta de identidade. Deixe em branco para não mostrar.">
           <Texto valor={lema} aoMudar={definirLema} />
+        </Campo>
+        <Campo
+          rotulo="Frase de Comer fora"
+          dica="Aparece no topo da tela de Comer fora. Deixe em branco para não mostrar."
+        >
+          <Texto valor={comerFora} aoMudar={definirComerFora} />
         </Campo>
         <Campo rotulo="Seu nome">
           <Texto valor={nomeNutricionista} aoMudar={definirNome} />

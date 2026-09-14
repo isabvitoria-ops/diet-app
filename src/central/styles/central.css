@@ -1069,6 +1069,101 @@ body:has(.central) {
   border-left: 3px solid var(--warning);
 }
 
+/* ---------------------------------------------------------------- logos */
+
+.c-logo {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+/* `contain` e não `cover`: logo cortada deixa de ser a marca. */
+.c-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 14%;
+}
+
+.c-logo-inicial {
+  background: var(--primary-soft);
+  border-color: transparent;
+  color: var(--primary-dark);
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* ---------------------------------------------------------------- casas */
+
+.c-casas {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.c-casa {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  box-shadow: var(--shadow);
+}
+
+.c-casa:hover {
+  border-color: var(--border-strong);
+}
+
+.c-casa:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.c-casa-texto {
+  flex: 1;
+  min-width: 0;
+}
+
+.c-casa-texto strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.c-casa-texto span {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.c-casa-seta {
+  color: var(--icone);
+  display: inline-flex;
+}
+
+/* Cabeçalho da tela de uma casa: logo grande ao lado do nome. */
+.c-casa-topo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 4px;
+}
+
 /* ---------------------------------------------------------------- navegação */
 
 .c-nav {

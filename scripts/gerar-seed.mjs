@@ -101,17 +101,21 @@ const atual = [];
 const a = (s) => atual.push(s);
 
 a(`-- =============================================================================
--- CENTRAL DO PACIENTE — atualizar a lista de substituição
+-- CENTRAL DO PACIENTE — atualizar o conteúdo (lista de substituição + Comer fora)
 --
 -- ARQUIVO GERADO por \`npm run seed\`. Não edite à mão.
 --
--- Rode num banco que JÁ EXISTE, para trazer a lista nova. Diferente do 0004,
--- este arquivo SOBRESCREVE os alimentos que já estiverem cadastrados com os
--- mesmos identificadores: nome, grupo, porção e observação passam a ser os
--- das sementes.
+-- Rode num banco que JÁ EXISTE, para trazer o conteúdo novo. Diferente do
+-- 0004, este arquivo SOBRESCREVE o que já estiver cadastrado com os mesmos
+-- identificadores: alimentos (nome, grupo, porção, observação) e categorias
+-- de Comer fora (título, situação e conteúdo inteiro).
 --
--- O que ele NÃO mexe: a coluna \`ativo\`. Alimento que você escondeu continua
--- escondido. Pacientes, planos, convites e histórico não são tocados.
+-- O que ele NÃO mexe: a coluna \`ativo\` dos alimentos, suas configurações já
+-- salvas, e nada de paciente — cadastro, plano, convite e histórico ficam
+-- intactos. Categoria que VOCÊ criou pelo painel também fica: ele só toca nos
+-- identificadores que vêm das sementes.
+--
+-- O que ele APAGA, de propósito: a categoria "Refeição livre".
 --
 -- Onde rodar: Supabase → SQL Editor → New query → colar tudo → Run.
 -- =============================================================================
@@ -131,6 +135,31 @@ for (const x of ALIMENTOS) {
   a(`insert into alimentos (id, nome, grupo_id, unidade_base_id, porcao_quantidade, porcao_unidade_id, quantidade_livre, medidas, sem_gluten, sem_lactose, tags, observacao) values (${txt(x.id)}, ${txt(x.nome)}, ${txt(x.grupoId)}, ${txt(x.unidadeBaseId)}, ${num(x.porcao?.quantidade ?? null)}, ${txt(x.porcao?.unidadeId ?? null)}, ${bool(x.quantidadeLivre)}, ${json(x.medidas)}, ${bool(x.atributos.semGluten)}, ${bool(x.atributos.semLactose)}, ${arr(x.tags)}, ${txt(x.observacao)}) on conflict (id) do update set nome = excluded.nome, grupo_id = excluded.grupo_id, unidade_base_id = excluded.unidade_base_id, porcao_quantidade = excluded.porcao_quantidade, porcao_unidade_id = excluded.porcao_unidade_id, quantidade_livre = excluded.quantidade_livre, sem_gluten = excluded.sem_gluten, sem_lactose = excluded.sem_lactose, tags = excluded.tags, observacao = excluded.observacao, atualizado_em = now();`);
 }
 
+a("\n-- Comer fora e guias ----------------------------------------------------------");
+for (const x of CATEGORIAS_COMER_FORA) {
+  const corpo = {
+    introducao: x.introducao,
+    decisoes: x.decisoes,
+    estabelecimentos: x.estabelecimentos,
+    lembretes: x.lembretes,
+    logo: x.logo,
+  };
+  a(`insert into conteudos (id, tipo, titulo, tema, resumo, icone, ordem, status, corpo, tags) values (${txt(x.id)}, 'comer_fora', ${txt(x.nome)}, null, ${txt(x.resumo)}, ${txt(x.icone)}, ${num(x.ordem)}, ${txt(x.status === "publicado" ? "publicado" : "rascunho")}, ${json(corpo)}, ${arr(x.tags)}) on conflict (id) do update set titulo = excluded.titulo, resumo = excluded.resumo, icone = excluded.icone, ordem = excluded.ordem, status = excluded.status, corpo = excluded.corpo, tags = excluded.tags, atualizado_em = now();`);
+}
+
+a(`
+-- A aba "Refeição livre" saiu a pedido dela. A conta que morava lá virou a
+-- frase do topo de Comer fora, logo abaixo.
+delete from favoritos where tipo = 'categoria' and ref_id = 'refeicao-livre';
+delete from conteudos where id = 'refeicao-livre';
+`);
+
+a("-- Configurações ---------------------------------------------------------------");
+for (const x of CONFIGURACOES) {
+  // `do nothing`: chave nova entra, chave existente fica como ela editou.
+  a(`insert into configuracoes (chave, valor, descricao) values (${txt(x.chave)}, ${json(x.valor)}, ${txt(x.descricao)}) on conflict (chave) do nothing;`);
+}
+
 a(`
 -- Conferência: deve listar um total por grupo, e nenhum alimento com porção
 -- e "quantidade livre" ao mesmo tempo.
@@ -142,8 +171,16 @@ select g.nome as grupo,
   join grupos_alimentares g on g.id = a.grupo_id
  group by g.nome, g.ordem
  order by g.ordem;
+
+-- E as categorias de Comer fora, com quantas casas cada uma tem.
+select titulo,
+       status,
+       jsonb_array_length(coalesce(corpo -> 'estabelecimentos', '[]'::jsonb)) as casas
+  from conteudos
+ where tipo = 'comer_fora'
+ order by ordem;
 `);
 
-const destinoAtual = fileURLToPath(new URL("../supabase/atualizar-lista.sql", import.meta.url));
+const destinoAtual = fileURLToPath(new URL("../supabase/atualizar-conteudo.sql", import.meta.url));
 writeFileSync(destinoAtual, atual.join("\n"));
-console.log(`atualizar-lista.sql gerado — ${atual.length} linhas`);
+console.log(`atualizar-conteudo.sql gerado — ${atual.length} linhas`);
