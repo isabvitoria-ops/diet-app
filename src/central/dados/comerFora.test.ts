@@ -33,10 +33,34 @@ test("hambúrguer tem as três casas, separadas em lanchonete e artesanal", () =
   );
 });
 
-test("cada casa tem as três classificações, uma de cada", () => {
-  for (const casa of porId.get("hamburguer")?.estabelecimentos ?? []) {
+test("massas tem o Spoleto e o italiano, separados por tipo de casa", () => {
+  const casas = porId.get("massas")?.estabelecimentos ?? [];
+  assert.deepEqual(
+    casas.map((c) => [c.nome, c.grupo]),
+    [
+      ["Spoleto", "Montar no balcão"],
+      ["Restaurante italiano", "Restaurantes"],
+    ],
+  );
+});
+
+test("cada casa com opções tem as três classificações, uma de cada", () => {
+  const casas = CATEGORIAS_COMER_FORA.flatMap((c) => c.estabelecimentos).filter(
+    (c) => c.opcoes.length > 0,
+  );
+  assert.ok(casas.length >= 5, "as casas cadastradas precisam estar aqui");
+  for (const casa of casas) {
     const niveis = casa.opcoes.map((o) => o.nivel);
     assert.deepEqual(niveis, ["melhor", "boa", "ocasional"], `${casa.nome} saiu fora da ordem`);
+  }
+});
+
+test("o total em kcal cresce de melhor escolha para mais ocasional", () => {
+  for (const casa of CATEGORIAS_COMER_FORA.flatMap((c) => c.estabelecimentos)) {
+    const totais = casa.opcoes.map((o) => o.energia?.kcal ?? null);
+    if (totais.some((v) => v === null)) continue;
+    const ordenado = [...totais].sort((a, b) => a! - b!);
+    assert.deepEqual(totais, ordenado, `${casa.nome}: a ordem das kcal não acompanha a classificação`);
   }
 });
 
@@ -61,12 +85,16 @@ test("os totais em kcal batem com a soma dos itens", () => {
 });
 
 test("o que é estimativa diz que é estimativa", () => {
-  const artesanal = porId
-    .get("hamburguer")
-    ?.estabelecimentos.find((c) => c.id === "hamburgueria-artesanal");
-  assert.ok(artesanal);
-  assert.match(artesanal.observacoes.join(" "), /estimativa/i);
-  assert.match(artesanal.resumo ?? "", /estimad/i);
+  const estimadas = ["hamburgueria-artesanal", "restaurante-italiano"];
+  for (const id of estimadas) {
+    const casa = CATEGORIAS_COMER_FORA.flatMap((c) => c.estabelecimentos).find((c) => c.id === id);
+    assert.ok(casa, `${id} precisa existir`);
+    assert.match(casa.observacoes.join(" "), /estimativa/i, `${id} sem aviso nas observações`);
+    assert.match(casa.resumo ?? "", /estimad/i, `${id} sem aviso no resumo`);
+    for (const opcao of casa.opcoes) {
+      assert.match(opcao.energia?.observacao ?? "", /estimativa/i, `${id} · ${opcao.titulo}`);
+    }
+  }
 });
 
 test("as marcas com logo têm logo; quem não tem cai na inicial", () => {
