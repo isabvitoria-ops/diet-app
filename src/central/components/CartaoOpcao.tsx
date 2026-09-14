@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { OpcaoComerFora } from "@/central/types";
 import { Icone } from "./Icone";
 import { Selo } from "./Selo";
@@ -8,27 +8,37 @@ import { rotas } from "@/central/rotas";
 /**
  * Cartão de opção de "Comer fora" (§14).
  *
- * O briefing pede cartões interativos, não PDF virado em página: o cartão
- * mostra o essencial fechado (o que é e como se encaixa) e abre para o
- * detalhe. As calorias (§16) só aparecem quando `mostrarKcal` está ligado
- * naquele item — o número fica guardado de qualquer jeito.
+ * O cartão nasce ABERTO. Fechado, ele obrigava um toque a mais para ver o
+ * que a pessoa veio ver — num combo, os acompanhamentos são a informação,
+ * não um detalhe secundário. A seta continua ali para fechar o que não
+ * interessa, mas o padrão é mostrar.
+ *
+ * As calorias (§16) só aparecem quando `mostrarKcal` está ligado naquele
+ * item — o número fica guardado de qualquer jeito.
  */
 export function CartaoOpcao({
   opcao,
   categoriaId,
   categoriaNome,
-  abertoInicialmente = false,
+  destacada = false,
 }: {
   opcao: OpcaoComerFora;
   categoriaId: string;
   categoriaNome: string;
-  abertoInicialmente?: boolean;
+  /** Veio de um link da busca: rola até ela e marca por um instante. */
+  destacada?: boolean;
 }) {
-  const [aberto, definirAberto] = useState(abertoInicialmente);
+  const [aberto, definirAberto] = useState(true);
+  const caixa = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!destacada) return;
+    caixa.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [destacada]);
   const temCorpo = Boolean(opcao.descricao) || opcao.detalhes.length > 0 || Boolean(opcao.energia?.mostrarKcal);
 
   return (
-    <article className="c-opcao">
+    <article className={`c-opcao ${destacada ? "destacada" : ""}`} ref={caixa}>
       <div className="c-opcao-topo">
         <button
           type="button"

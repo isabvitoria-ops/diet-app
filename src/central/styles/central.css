@@ -1069,6 +1069,13 @@ body:has(.central) {
   border-left: 3px solid var(--warning);
 }
 
+/* Cartão alcançado por um link da busca: marcado só o suficiente para o olho
+   achar onde a rolagem parou. */
+.c-opcao.destacada {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 /* ---------------------------------------------------------------- logos */
 
 .c-logo {

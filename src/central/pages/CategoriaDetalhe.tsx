@@ -167,7 +167,7 @@ export function CategoriaDetalhe() {
                     opcao={opcao}
                     categoriaId={categoria.id}
                     categoriaNome={categoria.nome}
-                    abertoInicialmente={opcao.id === opcaoDestacada}
+                    destacada={opcao.id === opcaoDestacada}
                   />
                 ))
               )}
