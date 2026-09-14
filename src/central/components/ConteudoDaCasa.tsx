@@ -23,12 +23,13 @@ export function ConteudoDaCasa({
   casa,
   categoriaId,
   categoriaNome,
-  mostrarLogo = true,
+  mostrarGrupo = true,
 }: {
   casa: EstabelecimentoComerFora;
   categoriaId: string;
   categoriaNome: string;
-  mostrarLogo?: boolean;
+  /** Dentro da categoria, o grupo já é redundante com o título da tela. */
+  mostrarGrupo?: boolean;
 }) {
   const [filtro, definirFiltro] = useState<NivelEscolha | "todos">("todos");
   const temNiveis = casa.opcoes.some((o) => o.nivel !== null);
@@ -36,12 +37,10 @@ export function ConteudoDaCasa({
 
   return (
     <>
-      {mostrarLogo && (
-        <div className="c-casa-topo">
-          <Logo nome={casa.nome} logo={casa.logo} tamanho={56} nomeVisivel={false} />
-          {casa.grupo && <span className="c-contagem">{casa.grupo}</span>}
-        </div>
-      )}
+      <div className="c-casa-topo">
+        <Logo nome={casa.nome} logo={casa.logo} tamanho={56} nomeVisivel={false} />
+        {mostrarGrupo && casa.grupo && <span className="c-contagem">{casa.grupo}</span>}
+      </div>
 
       {casa.observacoes.length > 0 && (
         <ul className="c-observacoes" style={{ marginTop: 16 }}>

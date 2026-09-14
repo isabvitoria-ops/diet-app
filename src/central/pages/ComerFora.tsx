@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import type { CategoriaComerFora } from "@/central/types";
 import { catalogo } from "@/central/dados/catalogo";
 import { CabecalhoPagina } from "@/central/components/CabecalhoPagina";
 import { Icone } from "@/central/components/Icone";
@@ -14,6 +15,17 @@ import { rotas } from "@/central/rotas";
  * do que falta escrever. Some uma categoria em `data/comerFora.ts` e ela
  * aparece aqui e na busca global, sem mexer nesta tela.
  */
+/**
+ * A imagem do cartão: a da categoria, quando ela é uma marca; senão a da
+ * única casa lá dentro, que é justamente o caso das categorias que abrem
+ * direto (Pizza, Açaí, Comida japonesa). Sem nenhuma das duas, o ícone.
+ */
+function imagemDaCategoria(categoria: CategoriaComerFora): string | null {
+  if (categoria.logo) return categoria.logo;
+  if (categoria.estabelecimentos.length === 1) return categoria.estabelecimentos[0]!.logo;
+  return null;
+}
+
 export function ComerFora() {
   const navegar = useNavigate();
   const { configuracoes } = useSessao();
@@ -43,8 +55,8 @@ export function ComerFora() {
                 className="c-categoria"
                 onClick={() => navegar(rotas.categoria(categoria.id))}
               >
-                {categoria.logo ? (
-                  <Logo nome={categoria.nome} logo={categoria.logo} tamanho={40} />
+                {imagemDaCategoria(categoria) ? (
+                  <Logo nome={categoria.nome} logo={imagemDaCategoria(categoria)} tamanho={40} />
                 ) : (
                   <span className="c-categoria-icone">
                     <Icone nome={categoria.icone} tamanho={21} />
@@ -70,8 +82,8 @@ export function ComerFora() {
                   className="c-categoria pendente"
                   onClick={() => navegar(rotas.categoria(categoria.id))}
                 >
-                  {categoria.logo ? (
-                    <Logo nome={categoria.nome} logo={categoria.logo} tamanho={40} />
+                  {imagemDaCategoria(categoria) ? (
+                    <Logo nome={categoria.nome} logo={imagemDaCategoria(categoria)} tamanho={40} />
                   ) : (
                     <span className="c-categoria-icone">
                       <Icone nome={categoria.icone} tamanho={21} />

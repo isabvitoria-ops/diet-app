@@ -357,41 +357,6 @@ export const GUIAS: Guia[] = [
     tags: ["variar", "sexta", "ideias", "receita", "rotina"],
   }),
 
-  // ============================================================== no dia a dia
-  guia({
-    id: "refeicao-livre",
-    titulo: "Refeição livre",
-    tema: "No dia a dia",
-    ordem: 8,
-    resumo: "Como ela se encaixa, e o que vem depois.",
-    tags: ["refeicao livre", "flexibilidade", "equilibrio"],
-    secoes: [
-      secao("por-que", "Por que ela existe", [
-        "Incluir uma refeição livre na rotina pode ser uma maneira de fortalecer sua relação com a alimentação, trazendo mais flexibilidade e prazer ao processo.",
-        "Isso não significa exagerar nem perder o foco nos seus objetivos: trata-se de encontrar equilíbrio, respeitando seu corpo e suas escolhas.",
-        "Comida é muito mais do que nutrientes. Ela também carrega memórias, afetos e momentos especiais. Saborear algo que você gosta, num encontro com amigos ou num momento de autocuidado, também faz parte de uma vida saudável.",
-      ]),
-      secao(
-        "como-contar",
-        "Como contar",
-        ["As opções da área Comer fora já vêm marcadas como completas ou meias."],
-        [
-          "Duas meias refeições equivalem a uma refeição completa.",
-          "Uma completa mais uma meia equivalem a uma refeição e meia.",
-        ],
-      ),
-      secao("depois", "Depois da refeição livre", [
-        "Depois de aproveitar sua refeição livre, o mais importante é simplesmente seguir em frente. Volte com naturalidade para o seu plano alimentar, mantendo o foco na constância.",
-        "Uma alimentação equilibrada é feita de escolhas conscientes ao longo do tempo, e uma refeição fora da rotina não anula todo o seu progresso.",
-      ]),
-    ],
-  }),
-
-  guia({ id: "comer-fora", titulo: "Comer fora", tema: "No dia a dia", ordem: 9, tags: ["comer fora", "restaurante"] }),
-  guia({ id: "industrializados", titulo: "Industrializados", tema: "No dia a dia", ordem: 10, tags: ["industrializado", "ultraprocessado"] }),
-  guia({ id: "doces", titulo: "Doces", tema: "No dia a dia", ordem: 11, tags: ["doce", "sobremesa", "acucar"] }),
-  guia({ id: "alcool", titulo: "Álcool", tema: "No dia a dia", ordem: 12, tags: ["alcool", "bebida", "cerveja", "vinho"] }),
-
   // ============================================================== digestão
   guia({ id: "constipacao", titulo: "Constipação", tema: "Digestão", ordem: 13, tags: ["constipacao", "intestino preso", "fibra"] }),
   guia({ id: "gases", titulo: "Gases", tema: "Digestão", ordem: 14, tags: ["gases", "flatulencia"] }),

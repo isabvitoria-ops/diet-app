@@ -164,6 +164,9 @@ const CATEGORIAS_REMOVIDAS = [
   "subway",
 ];
 
+// O tema inteiro "No dia a dia" saiu dos Guias a pedido dela.
+const GUIAS_REMOVIDOS = ["refeicao-livre", "comer-fora", "industrializados", "doces", "alcool"];
+
 // Opções que saíram quando as seções viraram repetição das casas.
 const OPCOES_REMOVIDAS = [
   "hamburguer:hamburguer-simples",
@@ -184,16 +187,28 @@ const OPCOES_REMOVIDAS = [
   "pizza:pizza-grossa",
   "acai:acai-500",
   "acai:acai-300",
+  "doces:doce-acai",
   "subway:subway-melhor",
   "subway:subway-boa",
   "subway:subway-ocasional",
 ];
 
+/*
+ * Os DELETE são escopados por `tipo`, e isso não é zelo à toa.
+ *
+ * Categoria de Comer fora e guia dividem a tabela `conteudos`, e o id é a
+ * chave primária das duas. O guia "Doces" e a categoria "Doces e sobremesas"
+ * nasceram com o mesmo id — no banco dela, quem entrou foi a categoria, e o
+ * guia sumiu calado no `on conflict do nothing`. Um delete sem `tipo` agora
+ * apagaria a categoria achando que apagava o guia.
+ */
 a(`
 -- O que saiu do ar, e os favoritos que apontavam para lá.
 delete from favoritos where tipo = 'categoria' and ref_id in (${CATEGORIAS_REMOVIDAS.map(txt).join(", ")});
+delete from favoritos where tipo = 'guia' and ref_id in (${GUIAS_REMOVIDOS.map(txt).join(", ")});
 delete from favoritos where tipo = 'opcao' and ref_id in (${OPCOES_REMOVIDAS.map(txt).join(", ")});
-delete from conteudos where id in (${CATEGORIAS_REMOVIDAS.map(txt).join(", ")});
+delete from conteudos where tipo = 'comer_fora' and id in (${CATEGORIAS_REMOVIDAS.map(txt).join(", ")});
+delete from conteudos where tipo = 'guia' and id in (${GUIAS_REMOVIDOS.map(txt).join(", ")});
 `);
 
 a("-- Configurações ---------------------------------------------------------------");

@@ -26,7 +26,7 @@ export const CONFIGURACOES: Configuracao[] = [
     chave: "lema",
     // Frase de identidade da Central. Está aqui, e não no código, porque é
     // a parte mais provável de mudar: trocar é editar um campo na tela.
-    valor: "Na sexta, o cardápio muda. O plano continua.",
+    valor: "Na sexta o cardápio muda — mas o plano continua.",
     descricao: "Frase curta de identidade, exibida na tela inicial. Deixe em branco para não mostrar.",
   },
   {

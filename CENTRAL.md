@@ -402,7 +402,8 @@ refeição"; a casa dentro dela responde "e naquele lugar ali, o que eu peço?".
 | Massas | Spoleto e Restaurante italiano |
 | Pizza | Pizzaria |
 | Açaí | Açaiteria |
-| Doces e sobremesas | As 6 meias refeições doces |
+| Doces e sobremesas | As 5 meias refeições doces, classificadas |
+| Cinema | O tamanho da pipoca |
 | Barzinho | Com drink e Com chopp, duas doses cada |
 
 Cada casa tem melhor escolha, boa opção e mais ocasional, com kcal por item e
@@ -440,8 +441,16 @@ vegetais congelados, prontos) e a lista de proteínas para ter em casa.
 atalhos de quem está sem tempo, com os links de compra já clicáveis.
 
 **Ainda sem conteúdo:** o guia "Variar em casa" (reservado para as suas ideias
-de variação), os quatro guias de Digestão, os dois de Restrições, e
-Industrializados, Doces, Álcool e Comer fora no tema do dia a dia.
+de variação), os quatro guias de Digestão e os dois de Restrições. O tema
+inteiro "No dia a dia" saiu a pedido dela — o texto do guia "Refeição livre"
+está no histórico do Git, se ela quiser trazê-lo de volta em outro tema.
+
+**Imagens**: toda casa e toda categoria publicada tem a sua, embutida como
+data URI. McDonald's e Burger King vêm do simple-icons (CC0); o resto é
+ilustração desenhada, porque marca não se imita e este ambiente não alcança
+banco de imagem. Categoria com uma casa só empresta a imagem dela no cartão
+da grade. Dois testes guardam isso: nenhuma fica sem imagem, e nenhuma aponta
+para endereço de fora — que quebraria a versão de arquivo único.
 
 **No catálogo de alimentos**, a lista de substituição está inteira:
 
@@ -471,8 +480,8 @@ qualquer coisa seria inventar. `null` quer dizer "ainda não informei", e é
 diferente de `false`.
 
 **Conferir antes de publicar:** o WhatsApp `(31) 99450-3318` e o nome
-`Isabela Marçal` foram lidos do rodapé dos seus materiais, e o lema entrou como
-"Sexta é dia de variar, não de sair da dieta." Os três estão em Configurações,
+`Isabela Marçal` foram lidos do rodapé dos seus materiais, e o lema está como
+"Na sexta o cardápio muda — mas o plano continua." Os três estão em Configurações,
 na área da nutricionista, e mudam sem publicar de novo.
 
 ## 13. Preparado para depois

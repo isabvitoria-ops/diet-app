@@ -106,7 +106,7 @@ export function CategoriaDetalhe() {
             casa={casaUnica}
             categoriaId={categoria.id}
             categoriaNome={categoria.nome}
-            mostrarLogo={false}
+            mostrarGrupo={false}
           />
         )}
 

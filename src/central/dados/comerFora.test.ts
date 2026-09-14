@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { CATEGORIAS_COMER_FORA } from "./sementes/comerFora";
 import { CONFIGURACOES } from "./sementes/configuracoes";
+import { GUIAS } from "./sementes/guias";
 
 /**
  * A estrutura de Comer fora depois da reorganização: sem a aba "Refeição
@@ -104,12 +105,30 @@ test("o que é estimativa diz que é estimativa", () => {
   }
 });
 
-test("as marcas com logo têm logo; quem não tem cai na inicial", () => {
-  const casas = porId.get("hamburguer")?.estabelecimentos ?? [];
-  const comLogo = casas.filter((c) => c.logo !== null).map((c) => c.nome);
-  assert.deepEqual(comLogo, ["McDonald's", "Burger King", "Artesanal"]);
-  for (const casa of casas) {
-    if (casa.logo) assert.match(casa.logo, /^data:image\//, `${casa.nome} precisa ser embutida`);
+test("toda casa e toda categoria publicada tem imagem própria", () => {
+  const semImagem: string[] = [];
+  for (const categoria of CATEGORIAS_COMER_FORA) {
+    if (categoria.status !== "publicado") continue;
+    for (const casa of categoria.estabelecimentos) {
+      if (!casa.logo) semImagem.push(`${categoria.nome} · ${casa.nome}`);
+    }
+    // Categoria sem casa precisa da imagem dela; com uma casa só, a tela
+    // empresta a da casa; com várias, cada cartão mostra a sua.
+    if (categoria.estabelecimentos.length === 0 && !categoria.logo) {
+      semImagem.push(categoria.nome);
+    }
+  }
+  assert.deepEqual(semImagem, [], `sem ilustração: ${semImagem.join(", ")}`);
+});
+
+test("as imagens são embutidas, não endereço de fora", () => {
+  const todas = CATEGORIAS_COMER_FORA.flatMap((c) => [
+    c.logo,
+    ...c.estabelecimentos.map((e) => e.logo),
+  ]).filter((l): l is string => l !== null);
+  assert.ok(todas.length >= 10, "as imagens precisam estar cadastradas");
+  for (const logo of todas) {
+    assert.match(logo, /^data:image\//, "imagem de fora quebraria a versão de arquivo único");
   }
 });
 
@@ -200,4 +219,36 @@ test("todo combo com kcal por item bate com o total, em toda categoria", () => {
     }
   }
   assert.ok(conferidos >= 15, `só ${conferidos} combos tinham kcal por item para conferir`);
+});
+
+/**
+ * Categoria de Comer fora e guia dividem a tabela `conteudos` no banco, e o
+ * id é a chave primária das duas. Dois conteúdos com o mesmo id não convivem:
+ * o primeiro entra e o segundo some calado, porque o seed é
+ * `on conflict do nothing`. Foi o que aconteceu com o guia "Doces" e a
+ * categoria "Doces e sobremesas" — o guia nunca chegou ao banco dela.
+ */
+test("nenhum guia tem o mesmo identificador de uma categoria de Comer fora", () => {
+  const categorias = new Set(CATEGORIAS_COMER_FORA.map((c) => c.id));
+  const colisoes = GUIAS.filter((g) => categorias.has(g.id)).map((g) => g.id);
+  assert.deepEqual(
+    colisoes,
+    [],
+    `estes ids existem nos dois lugares e um deles sumiria no banco: ${colisoes.join(", ")}`,
+  );
+});
+
+test("nenhum identificador de conteúdo se repete", () => {
+  const todos = [...CATEGORIAS_COMER_FORA.map((c) => c.id), ...GUIAS.map((g) => g.id)];
+  assert.equal(new Set(todos).size, todos.length, "há identificador repetido entre categorias e guias");
+});
+
+test('o tema "No dia a dia" saiu dos guias', () => {
+  assert.deepEqual(GUIAS.filter((g) => g.tema === "No dia a dia"), []);
+  assert.deepEqual([...new Set(GUIAS.map((g) => g.tema))].sort(), [
+    "Compras",
+    "Digestão",
+    "Marmitas",
+    "Restrições",
+  ]);
 });

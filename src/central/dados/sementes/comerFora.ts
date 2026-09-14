@@ -105,6 +105,12 @@ const ILUSTRACAO_ARTESANAL =
 const ILUSTRACAO_ITALIANO =
   "data:image/svg+xml,<svg viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg'><ellipse cx='32' cy='38' rx='29' ry='17' fill='%23EFEAE1'/><ellipse cx='32' cy='36' rx='23' ry='13' fill='%23FBF8F3'/><path d='M12 36c4-5 10-7 20-7s16 2 20 7c-3 6-11 9-20 9s-17-3-20-9z' fill='%23E8C978'/><path d='M13 35c5 1 9-2 14-1M15 39c6 1 10-3 16-2M20 43c6 0 9-3 15-3M34 34c5-1 9 1 14 3M36 39c5-1 8 0 13 2' stroke='%23D4AE55' stroke-width='1.6' stroke-linecap='round' fill='none'/><circle cx='26' cy='35' r='4.2' fill='%23C0453A'/><circle cx='38' cy='39' r='3.6' fill='%23C0453A'/><circle cx='33' cy='31' r='2.8' fill='%23D4574B'/><path d='M44 30c2-1 3-3 2-4' stroke='%237FA35A' stroke-width='2' stroke-linecap='round' fill='none'/><ellipse cx='45' cy='28' rx='2.6' ry='1.6' transform='rotate(-25 45 28)' fill='%237FA35A'/></svg>";
 
+const ILUSTRACAO_SUB =
+  "data:image/svg+xml,<svg viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg'><g transform='rotate(-12 32 32)'><path d='M6 26h52c3.3 0 6 2.7 6 6s-2.7 6-6 6H6c-3.3 0-6-2.7-6-6s2.7-6 6-6z' fill='%23D9A05B'/><path d='M4 32h56c2.2 0 3.6 2 3 4-.8 2.6-3.2 4.4-6 4.4H7c-2.8 0-5.2-1.8-6-4.4-.6-2 .8-4 3-4z' fill='%237FA35A'/><path d='M8 36h48c1.9 0 3.2 1.7 2.7 3.5-.6 2.2-2.6 3.7-4.9 3.7H10.2c-2.3 0-4.3-1.5-4.9-3.7C4.8 37.7 6.1 36 8 36z' fill='%23C0453A'/><path d='M10 41h44c2 0 3.4 1.8 2.8 3.7-.7 2.2-2.8 3.7-5.1 3.7H12.3c-2.3 0-4.4-1.5-5.1-3.7C6.6 42.8 8 41 10 41z' fill='%23F0D9A6'/><path d='M11 47h42c-1.4 4.4-7.6 6.6-21 6.6S12.4 51.4 11 47z' fill='%23C98F4E'/><ellipse cx='18' cy='29' rx='2.8' ry='1.5' fill='%23F0D6A8'/><ellipse cx='32' cy='28' rx='2.8' ry='1.5' fill='%23F0D6A8'/><ellipse cx='46' cy='29' rx='2.8' ry='1.5' fill='%23F0D6A8'/></g></svg>";
+
+const ILUSTRACAO_BALCAO =
+  "data:image/svg+xml,<svg viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg'><path d='M10 26h44l-4 26a6 6 0 0 1-6 5H20a6 6 0 0 1-6-5z' fill='%23FBF8F3' stroke='%23E6E1D9' stroke-width='1.5'/><path d='M12 33h40l-1.4 9c-6 3-12 1-18.6 1s-12 2-18.6-1z' fill='%23E8C978'/><path d='M13 42c6-2 12 0 19 0s13-2 19 0l-1.3 8.6a4 4 0 0 1-4 3.4H18.3a4 4 0 0 1-4-3.4z' fill='%23F0D9A6'/><circle cx='24' cy='38' r='3.4' fill='%23C0453A'/><circle cx='38' cy='40' r='3' fill='%23C0453A'/><ellipse cx='32' cy='35' rx='3' ry='1.8' fill='%237FA35A'/><path d='M44 19c0 3-2 5-2 7M50 17c0 3-2 5-2 7M38 18c0 3-2 5-2 7' stroke='%23D4CDC3' stroke-width='2' stroke-linecap='round' fill='none'/></svg>";
+
 const LOGO_BURGER_KING =
   "data:image/svg+xml,<svg fill='%23D62300' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'><path d='M15.39 12.614c-.72 0-1.11.538-1.11 1.215v1.508c0 .125-.043.182-.12.182-.056 0-.098-.035-.147-.133l-.971-1.885c-.37-.72-.755-.887-1.196-.887-.734 0-1.14.552-1.14 1.243v4.314c0 .678.392 1.215 1.112 1.215.72 0 1.112-.537 1.112-1.215v-1.507c0-.126.042-.182.119-.182.055 0 .097.035.146.133l.972 1.885c.37.719.769.886 1.195.886.735 0 1.14-.551 1.14-1.242v-4.315c0-.677-.391-1.215-1.111-1.215zm-4.02-.405c.364 0 .68-.286.68-.642 0-.238-.099-.412-.224-.572-.203-.266-.385-.496-.476-.74-.02-.056-.007-.105.056-.154.217-.167.469-.537.469-1.124 0-.886-.734-1.389-1.622-1.389h-.79c-.553 0-.819.321-.819.754v3.114c0 .419.245.754.692.754.448 0 .693-.335.693-.754v-.74c0-.09.042-.133.111-.133.084 0 .112.049.126.133.063.356.23.837.42 1.082.237.314.46.411.685.411zm-1.146-2.666h-.098c-.119 0-.175-.07-.175-.161v-.474c0-.09.056-.16.175-.16h.098c.294 0 .385.208.385.39 0 .174-.091.405-.385.405zm-3.761 2.666c1.132 0 1.734-.677 1.734-1.528V8.328c0-.419-.245-.754-.692-.754-.448 0-.693.335-.693.754v2.276c0 .167-.097.363-.35.363-.251 0-.335-.196-.335-.363V8.328c0-.419-.252-.754-.7-.754-.447 0-.691.335-.691.754v2.353c0 .852.594 1.528 1.727 1.528zm12.011-.034c.392 0 .7-.23.7-.65 0-.412-.308-.642-.7-.642h-.63c-.118 0-.174-.07-.174-.16v-.133c0-.091.056-.161.175-.161h.482c.336 0 .602-.202.602-.559 0-.355-.266-.558-.602-.558h-.482c-.12 0-.175-.07-.175-.16V9.04c0-.091.056-.161.175-.161h.629c.392 0 .7-.23.7-.65 0-.411-.308-.642-.7-.642h-1.321c-.553 0-.818.321-.818.754v3.079c0 .432.265.754.818.754h1.321zm2.642 3.127h-.342c-.615 0-1.09.286-1.09.914 0 .573.517.845.901.845.189 0 .322.056.322.202 0 .182-.224.3-.462.3-.79 0-1.328-.537-1.328-1.535 0-1.11.734-1.515 1.3-1.515.692 0 .804.349 1.287.349a.927.927 0 0 0 .936-.915.95.95 0 0 0-.398-.788c-.427-.315-1.07-.545-1.979-.545-1.629 0-3.216 1.026-3.216 3.414 0 2.282 1.587 3.35 3.153 3.35 1.643 0 2.685-1.012 2.685-2.492 0-.935-.587-1.584-1.769-1.584zm-12.43-2.688c-.783 0-1.21.587-1.21 1.32v4.132c0 .734.427 1.32 1.21 1.32.783 0 1.21-.586 1.21-1.32v-4.132c0-.733-.427-1.32-1.21-1.32zm11.494-.405c.447 0 .692-.335.692-.754v-.74c0-.09.042-.132.112-.132.084 0 .111.049.125.133.063.355.231.837.42 1.082.238.314.461.412.685.412.363 0 .678-.286.678-.643 0-.237-.098-.412-.224-.572-.237-.3-.384-.496-.475-.74-.02-.056-.007-.105.056-.153.217-.168.469-.538.469-1.124 0-.887-.735-1.39-1.623-1.39h-.79c-.552 0-.817.321-.817.754v3.114c0 .419.244.753.692.753zm.615-3.301c0-.09.056-.161.175-.161h.098c.293 0 .384.21.384.391 0 .175-.09.405-.384.405h-.098c-.12 0-.175-.07-.175-.16zm-18.87 3.267h.986c.93 0 1.496-.622 1.496-1.397 0-.621-.37-.907-.454-.977-.035-.028-.07-.056-.07-.084 0-.035.021-.048.056-.09.133-.154.266-.398.266-.754 0-.838-.567-1.285-1.448-1.285h-.832c-.552 0-.817.321-.817.754v3.079c0 .433.265.754.817.754zm.413-3.386c0-.09.056-.16.175-.16h.09c.301 0 .392.209.392.39 0 .168-.09.405-.391.405h-.091c-.12 0-.175-.07-.175-.16zm0 1.634c0-.091.056-.161.175-.161h.126c.335 0 .433.223.433.426 0 .181-.098.44-.433.44h-.126c-.12 0-.175-.07-.175-.161zm11.878 1.794c1.098 0 1.79-.699 1.79-1.718 0-.649-.391-1.096-1.174-1.096h-.224c-.413 0-.734.196-.734.636 0 .39.342.58.601.58.133 0 .217.041.217.139 0 .125-.147.21-.315.21-.524 0-.88-.37-.88-1.062 0-.768.489-1.047.866-1.047.462 0 .539.238.86.238.37 0 .623-.308.623-.629a.669.669 0 0 0-.266-.544c-.294-.217-.706-.377-1.321-.377-1.084 0-2.14.712-2.14 2.36 0 1.576 1.056 2.31 2.097 2.31zm-8.718 3.762a.354.354 0 0 1-.07-.188c0-.077.042-.133.126-.21.196-.181.678-.635.944-1.047.202-.314.286-.6.286-.837 0-.607-.552-1.082-1.153-1.082-.385 0-.748.216-.993.614-.329.53-.72 1.145-.972 1.39-.063.062-.098.076-.146.076-.084 0-.12-.056-.12-.146v-.699c0-.684-.405-1.235-1.139-1.235-.74 0-1.14.551-1.14 1.235v4.3c0 .685.399 1.237 1.14 1.237.734 0 1.14-.552 1.14-1.236v-.991c0-.084.035-.147.119-.147.111 0 .14.112.167.168.161.384.63 1.2 1.063 1.682.294.32.657.524 1.042.524.65 0 1.196-.566 1.196-1.173 0-.377-.161-.657-.469-.991-.392-.427-.853-.986-1.021-1.244zm15.751 6.702C19.432 23.707 16.313 24 12 24c-4.313 0-7.432-.293-9.25-1.32-1.09-.614-1.642-1.451-1.642-2.052 0-.342.181-.537.587-.537h20.61c.406 0 .587.195.587.537 0 .6-.552 1.438-1.643 2.053zm1.056-15.917H1.695c-.406 0-.587-.209-.587-.586C1.108 3.944 4.47 0 12 0c7.46 0 10.892 3.944 10.892 6.178 0 .377-.181.586-.587.586Z'/></svg>";
 
@@ -206,9 +212,10 @@ export const CATEGORIAS_COMER_FORA: CategoriaComerFora[] = [
         id: "subway",
         nome: "Subway",
         grupo: "Lanchonetes",
-        // Sem logo: a marca não está em nenhum acervo aberto. A nutricionista
-        // envia pelo painel, e até lá a tela mostra a inicial.
-        logo: null,
+        // Ilustração, não a logo: a marca não está em nenhum acervo aberto e
+        // desenhar uma imitação seria pior. A nutricionista troca pela real
+        // em um clique, pelo painel.
+        logo: ILUSTRACAO_SUB,
         ordem: 3,
         resumo: "Montagens do balcão, das mais leves às mais ocasionais.",
         opcoes: [
@@ -377,6 +384,8 @@ export const CATEGORIAS_COMER_FORA: CategoriaComerFora[] = [
         id: "spoleto",
         nome: "Spoleto",
         grupo: "Montar no balcão",
+        // Ilustração até ela enviar a logo — mesma razão do Subway.
+        logo: ILUSTRACAO_BALCAO,
         ordem: 1,
         opcoes: [
           opcao({
@@ -599,7 +608,7 @@ export const CATEGORIAS_COMER_FORA: CategoriaComerFora[] = [
     nome: "Doces e sobremesas",
     resumo: "Cada uma destas conta como meia refeição livre.",
     icone: "doces",
-    logo: null,
+    logo: "data:image/svg+xml,<svg viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg'><path d='M14 30h36v20a6 6 0 0 1-6 6H20a6 6 0 0 1-6-6z' fill='%23E8C978'/><path d='M14 40h36v4.5c-4 2.5-8 .5-12 .5s-8 2-12 0-6-3-8-2.5z' fill='%23C98F4E' opacity='.55'/><path d='M14 30c0-4 8-7 18-7s18 3 18 7c0 3-4 5-8 3.6-3-1-4 1.4-7 1.4s-4-2.4-7-1.4C24 35 20 33 14 30z' fill='%23FBF3DE'/><circle cx='32' cy='17' r='5.2' fill='%23C0453A'/><path d='M32 12V7' stroke='%237A4A2B' stroke-width='2' stroke-linecap='round'/><ellipse cx='22' cy='27' rx='2.4' ry='1.4' fill='%23C0453A'/><ellipse cx='42' cy='27' rx='2.4' ry='1.4' fill='%237C4685'/></svg>",
     ordem: 6,
     status: "publicado",
     introducao: "Duas destas opções somam uma refeição livre completa.",
@@ -609,31 +618,58 @@ export const CATEGORIAS_COMER_FORA: CategoriaComerFora[] = [
         id: "sobremesas",
         titulo: "Meias refeições doces",
         pergunta: "O que está na mesa?",
-        observacoes: [],
+        observacoes: [
+          "Doceria não tem tabela publicada, então estes números são estimativa. Use como ordem de grandeza, não como medida.",
+        ],
         opcoes: [
           opcao({
             id: "doce-gelato",
             titulo: "Gelato: 1 copo médio com 2 sabores",
             descricao: "Bacio di Latte, Lullo, Mi Garba.",
+            nivel: "melhor",
+            kcal: 250,
+            mostrarKcal: true,
+            observacaoEnergia: "Estimativa.",
             tags: ["gelato", "sorvete"],
+          }),
+          opcao({
+            id: "doce-milkshake",
+            titulo: "Milkshake pequeno",
+            descricao: "Bob's, McDonald's.",
+            nivel: "boa",
+            kcal: 400,
+            mostrarKcal: true,
+            observacaoEnergia: "Estimativa.",
+            tags: ["milkshake"],
+          }),
+          opcao({
+            id: "doce-bolo",
+            titulo: "1 fatia média de bolo ou torta com calda",
+            nivel: "boa",
+            kcal: 400,
+            mostrarKcal: true,
+            observacaoEnergia: "Estimativa.",
+            tags: ["bolo", "torta"],
           }),
           opcao({
             id: "doce-cookie",
             titulo: "1 cookie artesanal grande, estilo americano",
             descricao: "Mr. Cheney, American Day.",
+            nivel: "ocasional",
+            kcal: 500,
+            mostrarKcal: true,
+            observacaoEnergia: "Estimativa.",
             tags: ["cookie"],
           }),
-          opcao({ id: "doce-bolo", titulo: "1 fatia média de bolo ou torta com calda", tags: ["bolo", "torta"] }),
-          opcao({ id: "doce-brownie", titulo: "1 brownie com 1 bola de sorvete", tags: ["brownie", "sorvete"] }),
           opcao({
-            id: "doce-milkshake",
-            titulo: "Milkshake pequeno",
-            descricao: "Bob's, McDonald's.",
-            kcal: 330,
-            mostrarKcal: false,
-            tags: ["milkshake"],
+            id: "doce-brownie",
+            titulo: "1 brownie com 1 bola de sorvete",
+            nivel: "ocasional",
+            kcal: 630,
+            mostrarKcal: true,
+            observacaoEnergia: "Estimativa.",
+            tags: ["brownie", "sorvete"],
           }),
-          opcao({ id: "doce-acai", titulo: "Açaí de 300 ml com 1 fruta e leite condensado", tags: ["acai"] }),
         ],
       },
     ],
@@ -646,7 +682,7 @@ export const CATEGORIAS_COMER_FORA: CategoriaComerFora[] = [
     nome: "Barzinho",
     resumo: "O que pedir para beber, e o que costuma acompanhar.",
     icone: "taca",
-    logo: null,
+    logo: "data:image/svg+xml,<svg viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg'><path d='M10 12h44L36 34v18h9a3 3 0 0 1 0 6H19a3 3 0 0 1 0-6h9V34z' fill='%23EFEAE1'/><path d='M15 16h34L34 34h-4z' fill='%23E8C978'/><path d='M18 19h28l-5 6H23z' fill='%23F3DFA2'/><circle cx='45' cy='15' r='5' fill='%23C0453A'/><path d='M45 10V4' stroke='%237FA35A' stroke-width='2.4' stroke-linecap='round'/><path d='M40 9c3-3 7-3 10 0' stroke='%237FA35A' stroke-width='2' stroke-linecap='round' fill='none'/></svg>",
     ordem: 7,
     status: "publicado",
     introducao:
@@ -740,9 +776,67 @@ export const CATEGORIAS_COMER_FORA: CategoriaComerFora[] = [
     tags: ["barzinho", "bar", "drink", "chopp", "cerveja", "happy hour", "alcool", "petisco"],
   },
 
+  {
+    id: "cinema",
+    nome: "Cinema",
+    resumo: "O tamanho da pipoca é a escolha inteira.",
+    icone: "restaurante",
+    logo: "data:image/svg+xml,<svg viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg'><path d='M18 28h28l-3 27a4 4 0 0 1-4 3.6H25a4 4 0 0 1-4-3.6z' fill='%23C0453A'/><path d='M24 28h5l-1.6 30.6h-2.6zM35 28h5l-1.4 30.6H36z' fill='%23FBF8F3' opacity='.85'/><circle cx='24' cy='24' r='6' fill='%23F3E7C8'/><circle cx='33' cy='19' r='6.5' fill='%23FBF3DE'/><circle cx='42' cy='24' r='6' fill='%23F3E7C8'/><circle cx='28' cy='15' r='4.6' fill='%23F7EDD4'/><circle cx='38' cy='14' r='4.6' fill='%23F7EDD4'/><circle cx='19' cy='20' r='4' fill='%23FBF3DE'/><circle cx='47' cy='20' r='4' fill='%23FBF3DE'/><circle cx='33' cy='26' r='4.4' fill='%23F3E7C8'/></svg>",
+    ordem: 8,
+    status: "publicado",
+    introducao:
+      "A bebida zero não entra na conta, então o que decide é o balde. Os números são estimativa: a rede não publica tabela, e a manteiga muda tudo.",
+    estabelecimentos: [],
+    decisoes: [
+      {
+        id: "pipoca",
+        titulo: "Pipoca e bebida",
+        pergunta: "Qual balde?",
+        observacoes: [],
+        opcoes: [
+          opcao({
+            id: "cinema-melhor",
+            titulo: "Pipoca pequena",
+            descricao: "Com refrigerante zero.",
+            nivel: "melhor",
+            detalhes: ["Pipoca pequena — 200 kcal", "Refrigerante zero — 0 kcal"],
+            kcal: 200,
+            mostrarKcal: true,
+            observacaoEnergia: "Estimativa do total.",
+            tags: ["cinema", "pipoca"],
+          }),
+          opcao({
+            id: "cinema-boa",
+            titulo: "Pipoca média",
+            descricao: "Com refrigerante zero.",
+            nivel: "boa",
+            detalhes: ["Pipoca média — 450 kcal", "Refrigerante zero — 0 kcal"],
+            kcal: 450,
+            mostrarKcal: true,
+            observacaoEnergia: "Estimativa do total.",
+            tags: ["cinema", "pipoca"],
+          }),
+          opcao({
+            id: "cinema-ocasional",
+            titulo: "Pipoca grande com um pacotinho de Fini",
+            descricao: "Com refrigerante zero.",
+            nivel: "ocasional",
+            detalhes: ["Pipoca grande — 700 kcal", "Fini, pacotinho — 90 kcal", "Refrigerante zero — 0 kcal"],
+            kcal: 790,
+            mostrarKcal: true,
+            observacaoEnergia: "Estimativa do total.",
+            tags: ["cinema", "pipoca", "fini", "bala"],
+          }),
+        ],
+      },
+    ],
+    lembretes: [],
+    tags: ["cinema", "pipoca", "filme", "fini", "bala"],
+  },
+
   // Categorias já reservadas — aparecem na grade e na busca, ainda sem conteúdo.
-  { id: "restaurantes", nome: "Restaurantes", resumo: null, icone: "restaurante", logo: null, ordem: 8, status: "em-preparacao", introducao: null, decisoes: [], estabelecimentos: [], lembretes: [], tags: ["restaurante", "self service", "buffet", "por quilo"] },
-  { id: "delivery", nome: "Delivery", resumo: null, icone: "delivery", logo: null, ordem: 9, status: "em-preparacao", introducao: null, decisoes: [], estabelecimentos: [], lembretes: [], tags: ["delivery", "ifood", "entrega"] },
+  { id: "restaurantes", nome: "Restaurantes", resumo: null, icone: "restaurante", logo: null, ordem: 9, status: "em-preparacao", introducao: null, decisoes: [], estabelecimentos: [], lembretes: [], tags: ["restaurante", "self service", "buffet", "por quilo"] },
+  { id: "delivery", nome: "Delivery", resumo: null, icone: "delivery", logo: null, ordem: 10, status: "em-preparacao", introducao: null, decisoes: [], estabelecimentos: [], lembretes: [], tags: ["delivery", "ifood", "entrega"] },
 ];
 
 export const CATEGORIA_COMER_FORA_POR_ID: ReadonlyMap<string, CategoriaComerFora> = new Map(
