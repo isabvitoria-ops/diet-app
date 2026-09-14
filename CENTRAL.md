@@ -418,10 +418,32 @@ atalhos de quem está sem tempo, com os links de compra já clicáveis.
 de variação), os quatro guias de Digestão, os dois de Restrições, e
 Industrializados, Doces, Álcool e Comer fora no tema do dia a dia.
 
-**No catálogo de alimentos**, segue valendo o que veio da lista de
-substituição: 1 equivalência (100 g de arroz = 80 g de macarrão), 2 alimentos
-com porção e os 27 vegetais livres com a regra de 150 g. Os demais aparecem
-como "sem porção" até você cadastrar.
+**No catálogo de alimentos**, a lista de substituição está inteira:
+
+| Grupo | Itens | Situação |
+|---|---|---|
+| Carboidratos | 67 | todos com porção |
+| Proteínas | 44 | todos com porção |
+| Gorduras | 62 | todos com porção |
+| Frutas | 54 | 53 com porção + o limão, que é livre |
+| Vegetais livres | 27 | quantidade livre, mínimo de 150 g no almoço e no jantar |
+
+Nenhum alimento ficou pendente. Mais a equivalência do briefing (100 g de arroz
+= 80 g de macarrão), que continua cadastrada como regra explícita — as demais
+trocas saem da razão entre as porções, sem uma linha por par.
+
+**A regra de mão única**: 1 porção de carboidrato equivale a 1 porção de fruta,
+e fruta não vira carboidrato. Ela mora em `trocaParaGrupos`, no grupo dos
+carboidratos, e não em código: o motor recusa o sentido proibido, a lista de
+destinos nem oferece a opção, e a frase que aparece nas duas telas
+("Sabia? Uma porção de carboidratos pode virar uma porção de frutas — mas nunca
+o contrário.") é derivada do mesmo campo. Mudar o dado muda as três coisas
+juntas.
+
+**Glúten e lactose** ficaram em branco de propósito. Boa parte da lista existe
+nas duas versões ("com ou sem glúten", "com ou sem lactose"), então marcar
+qualquer coisa seria inventar. `null` quer dizer "ainda não informei", e é
+diferente de `false`.
 
 **Conferir antes de publicar:** o WhatsApp `(31) 99450-3318` e o nome
 `Isabela Marçal` foram lidos do rodapé dos seus materiais, e o lema entrou como

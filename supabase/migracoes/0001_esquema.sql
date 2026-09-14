@@ -125,6 +125,10 @@ create table if not exists grupos_alimentares (
   -- {"tipo":"livre","texto":"...","minimos":[{"refeicao":"Almoço","medida":{...}}]}
   regra jsonb,
   troca_por_porcao boolean not null default true,
+  -- Grupos para os quais uma porção deste grupo pode ser convertida, além do
+  -- próprio. É de MÃO ÚNICA: carboidratos leva {"frutas"}, e frutas leva {},
+  -- porque no material carboidrato vira fruta e fruta não vira carboidrato.
+  troca_para_grupos text[] not null default '{}',
   tags text[] not null default '{}',
   ativo boolean not null default true,
   criado_em timestamptz not null default now(),
@@ -141,6 +145,9 @@ create table if not exists alimentos (
   -- calculadora, em vez de ganhar um valor plausível inventado.
   porcao_quantidade numeric,
   porcao_unidade_id text references unidades (id),
+  -- Livre por decisão da nutricionista (o limão), que é diferente de porção
+  -- nula por dado faltando. As telas contam os dois de formas opostas.
+  quantidade_livre boolean not null default false,
   -- [{"unidadeId":"colher-sopa","equivalenteNaBase":25,"rotulo":null}]
   medidas jsonb not null default '[]'::jsonb,
   -- Três estados de propósito: true, false e NULL ("ainda não informei").

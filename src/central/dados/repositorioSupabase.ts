@@ -227,6 +227,7 @@ export const repositorioSupabase: Repositorio = {
       unidade_base_id: alimento.unidadeBaseId,
       porcao_quantidade: alimento.porcao?.quantidade ?? null,
       porcao_unidade_id: alimento.porcao?.unidadeId ?? null,
+      quantidade_livre: alimento.quantidadeLivre,
       medidas: alimento.medidas,
       sem_gluten: alimento.atributos.semGluten,
       sem_lactose: alimento.atributos.semLactose,

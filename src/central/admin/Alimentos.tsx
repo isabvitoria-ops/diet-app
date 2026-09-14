@@ -106,6 +106,7 @@ function ModalAlimento({ alimento, aoFechar }: { alimento: Alimento | null; aoFe
   // Começa no valor atual do alimento, não em "ativo": abrir um item oculto
   // só para corrigir o nome não pode religá-lo sem ninguém pedir.
   const [ativo, definirAtivo] = useState(alimento?.ativo ?? true);
+  const [quantidadeLivre, definirQuantidadeLivre] = useState(alimento?.quantidadeLivre ?? false);
   const [aviso, definirAviso] = useState<string | null>(null);
 
   async function salvar() {
@@ -118,6 +119,11 @@ function ModalAlimento({ alimento, aoFechar }: { alimento: Alimento | null; aoFe
     if (porcao.trim() && (!Number.isFinite(quantidade) || quantidade! <= 0)) {
       return definirAviso("A porção precisa ser um número maior que zero.");
     }
+    // Os dois juntos diriam coisas contrárias: "a porção é 100 g" e "não tem
+    // porção". Recusar aqui é mais honesto do que eleger um vencedor calado.
+    if (quantidadeLivre && quantidade !== null) {
+      return definirAviso("Quantidade livre e porção não convivem: apague a porção ou desmarque o livre.");
+    }
 
     const novo: Alimento = {
       id: identificador,
@@ -125,6 +131,7 @@ function ModalAlimento({ alimento, aoFechar }: { alimento: Alimento | null; aoFe
       grupoId,
       unidadeBaseId,
       porcao: quantidade !== null ? { quantidade: quantidade!, unidadeId: porcaoUnidade } : null,
+      quantidadeLivre,
       medidas: alimento?.medidas ?? [],
       atributos: { semGluten: deTrinario(semGluten), semLactose: deTrinario(semLactose) },
       tags: listaDeLinhas(tags),
@@ -182,6 +189,18 @@ function ModalAlimento({ alimento, aoFechar }: { alimento: Alimento | null; aoFe
       <Campo rotulo="Observação (só para você)">
         <AreaTexto valor={observacao} aoMudar={definirObservacao} linhas={2} />
       </Campo>
+      <label className="c-chip" style={{ marginTop: 10 }}>
+        <input
+          type="checkbox"
+          checked={quantidadeLivre}
+          onChange={(e) => definirQuantidadeLivre(e.target.checked)}
+        />
+        Quantidade livre
+      </label>
+      <p className="c-dica">
+        Marque quando o alimento não entra em conta de porção por decisão sua — o limão, na lista de
+        frutas. É diferente de deixar a porção vazia, que quer dizer &ldquo;ainda não cadastrei&rdquo;.
+      </p>
       <label className="c-chip" style={{ marginTop: 10 }}>
         <input type="checkbox" checked={ativo} onChange={(e) => definirAtivo(e.target.checked)} />
         Visível para os pacientes

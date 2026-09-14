@@ -1060,6 +1060,15 @@ body:has(.central) {
   font-weight: 600;
 }
 
+/* A regra de mão única entre grupos. Âmbar e com barra à esquerda porque ela
+   não é uma informação a mais sobre o grupo: é a que mais se aplica ao
+   contrário por engano, e precisa parar o olho. */
+.c-regra-atencao {
+  background: var(--warning-soft);
+  color: #6d5116;
+  border-left: 3px solid var(--warning);
+}
+
 /* ---------------------------------------------------------------- navegação */
 
 .c-nav {

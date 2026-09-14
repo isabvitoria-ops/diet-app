@@ -91,6 +91,8 @@ export type MotivoFalha =
   | "quantidade-invalida"
   | "unidade-nao-cadastrada"
   | "porcao-nao-cadastrada"
+  | "quantidade-livre"
+  | "sentido-nao-permitido"
   | "sem-equivalencia";
 
 export interface TrocaSemResultado {

@@ -51,12 +51,12 @@ UNIDADES.forEach((x, i) => {
 
 p("\n-- Grupos alimentares ----------------------------------------------------------");
 for (const x of GRUPOS) {
-  p(`insert into grupos_alimentares (id, nome, descricao, ordem, regra, troca_por_porcao, tags) values (${txt(x.id)}, ${txt(x.nome)}, ${txt(x.descricao)}, ${num(x.ordem)}, ${x.regra ? json(x.regra) : "null"}, ${bool(x.trocaPorPorcao)}, ${arr(x.tags)}) on conflict (id) do nothing;`);
+  p(`insert into grupos_alimentares (id, nome, descricao, ordem, regra, troca_por_porcao, troca_para_grupos, tags) values (${txt(x.id)}, ${txt(x.nome)}, ${txt(x.descricao)}, ${num(x.ordem)}, ${x.regra ? json(x.regra) : "null"}, ${bool(x.trocaPorPorcao)}, ${arr(x.trocaParaGrupos)}, ${arr(x.tags)}) on conflict (id) do nothing;`);
 }
 
 p("\n-- Alimentos -------------------------------------------------------------------");
 for (const x of ALIMENTOS) {
-  p(`insert into alimentos (id, nome, grupo_id, unidade_base_id, porcao_quantidade, porcao_unidade_id, medidas, sem_gluten, sem_lactose, tags, observacao) values (${txt(x.id)}, ${txt(x.nome)}, ${txt(x.grupoId)}, ${txt(x.unidadeBaseId)}, ${num(x.porcao?.quantidade ?? null)}, ${txt(x.porcao?.unidadeId ?? null)}, ${json(x.medidas)}, ${bool(x.atributos.semGluten)}, ${bool(x.atributos.semLactose)}, ${arr(x.tags)}, ${txt(x.observacao)}) on conflict (id) do nothing;`);
+  p(`insert into alimentos (id, nome, grupo_id, unidade_base_id, porcao_quantidade, porcao_unidade_id, quantidade_livre, medidas, sem_gluten, sem_lactose, tags, observacao) values (${txt(x.id)}, ${txt(x.nome)}, ${txt(x.grupoId)}, ${txt(x.unidadeBaseId)}, ${num(x.porcao?.quantidade ?? null)}, ${txt(x.porcao?.unidadeId ?? null)}, ${bool(x.quantidadeLivre)}, ${json(x.medidas)}, ${bool(x.atributos.semGluten)}, ${bool(x.atributos.semLactose)}, ${arr(x.tags)}, ${txt(x.observacao)}) on conflict (id) do nothing;`);
 }
 
 p("\n-- Equivalências ---------------------------------------------------------------");
@@ -84,3 +84,66 @@ p("");
 const destino = fileURLToPath(new URL("../supabase/migracoes/0004_dados_iniciais.sql", import.meta.url));
 writeFileSync(destino, linhas.join("\n"));
 console.log(`0004_dados_iniciais.sql gerado — ${linhas.length} linhas`);
+
+/*
+ * Segundo arquivo: `supabase/atualizar-lista.sql`.
+ *
+ * O 0004 é `on conflict do nothing` de propósito — rodar de novo não pode
+ * desfazer o que ela editou pelo painel. Só que é justamente isso que o
+ * impede de CORRIGIR um alimento que já existe no banco com valor antigo.
+ *
+ * Então a atualização mora num arquivo separado, que ela roda sabendo o que
+ * faz: ele sobrescreve nome, grupo, porção e observação de todo alimento das
+ * sementes. `ativo` fica de fora — esconder um alimento é decisão dela, e
+ * uma atualização de lista não pode religar o que ela escondeu.
+ */
+const atual = [];
+const a = (s) => atual.push(s);
+
+a(`-- =============================================================================
+-- CENTRAL DO PACIENTE — atualizar a lista de substituição
+--
+-- ARQUIVO GERADO por \`npm run seed\`. Não edite à mão.
+--
+-- Rode num banco que JÁ EXISTE, para trazer a lista nova. Diferente do 0004,
+-- este arquivo SOBRESCREVE os alimentos que já estiverem cadastrados com os
+-- mesmos identificadores: nome, grupo, porção e observação passam a ser os
+-- das sementes.
+--
+-- O que ele NÃO mexe: a coluna \`ativo\`. Alimento que você escondeu continua
+-- escondido. Pacientes, planos, convites e histórico não são tocados.
+--
+-- Onde rodar: Supabase → SQL Editor → New query → colar tudo → Run.
+-- =============================================================================
+
+-- Colunas novas. \`if not exists\` para o arquivo poder rodar mais de uma vez.
+alter table grupos_alimentares add column if not exists troca_para_grupos text[] not null default '{}';
+alter table alimentos add column if not exists quantidade_livre boolean not null default false;
+`);
+
+a("-- Grupos alimentares ----------------------------------------------------------");
+for (const x of GRUPOS) {
+  a(`insert into grupos_alimentares (id, nome, descricao, ordem, regra, troca_por_porcao, troca_para_grupos, tags) values (${txt(x.id)}, ${txt(x.nome)}, ${txt(x.descricao)}, ${num(x.ordem)}, ${x.regra ? json(x.regra) : "null"}, ${bool(x.trocaPorPorcao)}, ${arr(x.trocaParaGrupos)}, ${arr(x.tags)}) on conflict (id) do update set nome = excluded.nome, descricao = excluded.descricao, ordem = excluded.ordem, regra = excluded.regra, troca_por_porcao = excluded.troca_por_porcao, troca_para_grupos = excluded.troca_para_grupos, tags = excluded.tags, atualizado_em = now();`);
+}
+
+a("\n-- Alimentos -------------------------------------------------------------------");
+for (const x of ALIMENTOS) {
+  a(`insert into alimentos (id, nome, grupo_id, unidade_base_id, porcao_quantidade, porcao_unidade_id, quantidade_livre, medidas, sem_gluten, sem_lactose, tags, observacao) values (${txt(x.id)}, ${txt(x.nome)}, ${txt(x.grupoId)}, ${txt(x.unidadeBaseId)}, ${num(x.porcao?.quantidade ?? null)}, ${txt(x.porcao?.unidadeId ?? null)}, ${bool(x.quantidadeLivre)}, ${json(x.medidas)}, ${bool(x.atributos.semGluten)}, ${bool(x.atributos.semLactose)}, ${arr(x.tags)}, ${txt(x.observacao)}) on conflict (id) do update set nome = excluded.nome, grupo_id = excluded.grupo_id, unidade_base_id = excluded.unidade_base_id, porcao_quantidade = excluded.porcao_quantidade, porcao_unidade_id = excluded.porcao_unidade_id, quantidade_livre = excluded.quantidade_livre, sem_gluten = excluded.sem_gluten, sem_lactose = excluded.sem_lactose, tags = excluded.tags, observacao = excluded.observacao, atualizado_em = now();`);
+}
+
+a(`
+-- Conferência: deve listar um total por grupo, e nenhum alimento com porção
+-- e "quantidade livre" ao mesmo tempo.
+select g.nome as grupo,
+       count(*) as alimentos,
+       count(a.porcao_quantidade) as com_porcao,
+       count(*) filter (where a.quantidade_livre) as livres
+  from alimentos a
+  join grupos_alimentares g on g.id = a.grupo_id
+ group by g.nome, g.ordem
+ order by g.ordem;
+`);
+
+const destinoAtual = fileURLToPath(new URL("../supabase/atualizar-lista.sql", import.meta.url));
+writeFileSync(destinoAtual, atual.join("\n"));
+console.log(`atualizar-lista.sql gerado — ${atual.length} linhas`);

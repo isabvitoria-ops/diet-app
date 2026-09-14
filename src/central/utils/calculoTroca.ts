@@ -23,7 +23,8 @@ import { emPorcoes, medidaDePorcoes } from "./porcoes";
  *   1. equivalência cadastrada no sentido origem → destino;
  *   2. a mesma equivalência lida ao contrário, quando ela for bidirecional;
  *   3. a razão entre as porções dos dois alimentos, quando eles são do mesmo
- *      grupo e o grupo trabalha em porções.
+ *      grupo — ou de grupos que o material permita cruzar, sempre no sentido
+ *      declarado: carboidrato vira fruta, fruta não vira carboidrato.
  *
  * Se nenhum caminho fecha, o retorno é uma falha com motivo — a tela explica
  * ao paciente o que está faltando em vez de mostrar um número chutado.
@@ -160,9 +161,37 @@ export function calcularTroca(entrada: EntradaTroca, ctx: ContextoCalculo = cont
     return montar(origem, destino, medida, aplicada, tentativa.origemCalculo);
   }
 
-  // Caminho 3: razão entre as porções, dentro do mesmo grupo.
+  // Caminho 3: razão entre as porções — no mesmo grupo, ou num grupo que o
+  // de origem declare como destino permitido.
   const grupo = ctx.grupo(origem.grupoId);
-  if (grupo && grupo.trocaPorPorcao && origem.grupoId === destino.grupoId) {
+  const mesmoGrupo = origem.grupoId === destino.grupoId;
+  const grupoLiberado = grupo?.trocaParaGrupos.includes(destino.grupoId) ?? false;
+
+  // Mão única: se o caminho de volta estaria liberado e este não, a troca não
+  // é "não cadastrada" — ela existe e foi recusada nesse sentido. Dizer isso
+  // é o que separa um material respeitado de um sistema que parece quebrado.
+  if (!mesmoGrupo && !grupoLiberado) {
+    const grupoDestino = ctx.grupo(destino.grupoId);
+    if (grupoDestino?.trocaParaGrupos.includes(origem.grupoId)) {
+      return falha(
+        "sentido-nao-permitido",
+        `No seu material esta troca vale no outro sentido: ${grupoDestino.nome.toLowerCase()} pode virar ${grupo?.nome.toLowerCase() ?? "este grupo"}, mas não o contrário.`,
+      );
+    }
+  }
+
+  if (grupo && grupo.trocaPorPorcao && (mesmoGrupo || grupoLiberado)) {
+    const destinoEmPorcoes = mesmoGrupo || (ctx.grupo(destino.grupoId)?.trocaPorPorcao ?? false);
+    if (!destinoEmPorcoes) {
+      return falha("sem-equivalencia", `${destino.nome} não trabalha em porções fechadas.`);
+    }
+    // Livre e pendente são os dois "sem porção", e dizem coisas opostas:
+    // um é decisão do material, o outro é dado que falta.
+    const livre = [origem, destino].find((a) => a.quantidadeLivre);
+    if (livre) {
+      return falha("quantidade-livre", `${livre.nome} é de quantidade livre — não entra em conta de porção.`);
+    }
+
     const porcoes = emPorcoes(origem, medida);
     if (porcoes === null) {
       return falha(

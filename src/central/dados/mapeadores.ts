@@ -51,6 +51,7 @@ export function paraGrupo(l: Linha): GrupoAlimentar {
     ordem: numero(l.ordem),
     regra: (l.regra as GrupoAlimentar["regra"]) ?? null,
     trocaPorPorcao: booleano(l.troca_por_porcao),
+    trocaParaGrupos: lista(l.troca_para_grupos),
     tags: lista(l.tags),
   };
 }
@@ -64,6 +65,7 @@ export function paraAlimento(l: Linha): Alimento {
     grupoId: texto(l.grupo_id),
     unidadeBaseId: texto(l.unidade_base_id),
     porcao: quantidade !== null && unidade ? { quantidade, unidadeId: unidade } : null,
+    quantidadeLivre: l.quantidade_livre === true,
     medidas: Array.isArray(l.medidas) ? (l.medidas as Alimento["medidas"]) : [],
     atributos: {
       semGluten: booleanoOuNulo(l.sem_gluten),

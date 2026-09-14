@@ -10,6 +10,7 @@ import { SeloNeutro } from "@/central/components/Selo";
 import { textoMedida } from "@/central/utils/medidas";
 import { normalizar } from "@/central/utils/texto";
 import { destinosPossiveis } from "@/central/utils/calculoTroca";
+import { fraseDeMaoUnica } from "@/central/utils/regraEntreGrupos";
 import { rotas } from "@/central/rotas";
 
 /**
@@ -27,6 +28,7 @@ export function GrupoDetalhe() {
 
   const grupo = catalogo.grupo(grupoId);
   const alimentos = useMemo(() => (grupo ? catalogo.alimentosDoGrupo(grupo.id) : []), [grupo]);
+  const aviso = useMemo(() => (grupo ? fraseDeMaoUnica(grupo, catalogo.grupos()) : null), [grupo]);
 
   const visiveis = useMemo(() => {
     const termo = normalizar(consulta);
@@ -61,6 +63,12 @@ export function GrupoDetalhe() {
       />
 
       <div className="c-conteudo">
+        {aviso && (
+          <div className="c-regra c-regra-atencao" role="note">
+            {aviso}
+          </div>
+        )}
+
         {grupo.regra?.tipo === "livre" && (
           <div className="c-regra">
             <strong>Quantidade livre.</strong>{" "}
@@ -110,7 +118,7 @@ export function GrupoDetalhe() {
                         <span className="c-lista-item-apoio">
                           {alimento.porcao
                             ? `1 porção · ${textoMedida(alimento.porcao, unidade)}`
-                            : grupo.regra?.tipo === "livre"
+                            : alimento.quantidadeLivre || grupo.regra?.tipo === "livre"
                               ? "Quantidade livre"
                               : "Porção a definir"}
                         </span>
@@ -119,7 +127,8 @@ export function GrupoDetalhe() {
                         {temTroca ? (
                           <Icone nome="troca" tamanho={17} />
                         ) : (
-                          grupo.regra?.tipo !== "livre" && <SeloNeutro>Em cadastro</SeloNeutro>
+                          grupo.regra?.tipo !== "livre" &&
+                          !alimento.quantidadeLivre && <SeloNeutro>Em cadastro</SeloNeutro>
                         )}
                       </span>
                     </button>

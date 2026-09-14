@@ -27,6 +27,13 @@ export interface Alimento {
    * oferecido na calculadora.
    */
   porcao: Medida | null;
+  /**
+   * Quantidade livre por decisão da nutricionista, não por falta de dado.
+   * Existe para separar dois "sem porção" que a tela precisa contar de
+   * formas opostas: o limão da lista de frutas é livre de propósito, e
+   * chamá-lo de "porção a definir" seria mentir sobre o material.
+   */
+  quantidadeLivre: boolean;
   medidas: MedidaDoAlimento[];
   atributos: AtributosAlimento;
   /** Palavras que a busca global também aceita ("massa", "espaguete"). */
@@ -67,5 +74,15 @@ export interface GrupoAlimentar {
    * explícita ali — sem mexer em código (§10).
    */
   trocaPorPorcao: boolean;
+  /**
+   * Outros grupos para os quais uma porção deste grupo pode ser convertida.
+   *
+   * É de MÃO ÚNICA, e essa é a razão de existir: no material, 1 porção de
+   * carboidrato equivale a 1 porção de fruta, mas trocar fruta por
+   * carboidrato não é permitido. Um campo bidirecional não saberia dizer
+   * isso. Quem está aqui é o grupo de ORIGEM; o destino não precisa
+   * retribuir.
+   */
+  trocaParaGrupos: string[];
   tags: string[];
 }

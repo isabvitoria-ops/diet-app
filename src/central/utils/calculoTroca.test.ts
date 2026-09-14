@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Alimento, Equivalencia, GrupoAlimentar, Medida } from "@/central/types";
-import { calcularTroca, type ContextoCalculo } from "./calculoTroca";
+import { calcularTroca, destinosPossiveis, type ContextoCalculo } from "./calculoTroca";
 import { combinarPorcoes, emPorcoes, medidaDePorcoes } from "./porcoes";
 import { arredondarExibicao, converter } from "./medidas";
 import { catalogo, hidratar } from "@/central/dados/catalogo";
@@ -17,8 +17,17 @@ hidratar(await repositorioLocal.carregarCatalogo());
  * Node — sem nenhuma dependência de teste instalada.
  */
 
-function grupo(id: string, trocaPorPorcao = true): GrupoAlimentar {
-  return { id, nome: id, descricao: null, ordem: 1, regra: { tipo: "porcoes" }, trocaPorPorcao, tags: [] };
+function grupo(id: string, trocaPorPorcao = true, trocaParaGrupos: string[] = []): GrupoAlimentar {
+  return {
+    id,
+    nome: id,
+    descricao: null,
+    ordem: 1,
+    regra: { tipo: "porcoes" },
+    trocaPorPorcao,
+    trocaParaGrupos,
+    tags: [],
+  };
 }
 
 function alimento(id: string, extra: Partial<Alimento> = {}): Alimento {
@@ -28,6 +37,7 @@ function alimento(id: string, extra: Partial<Alimento> = {}): Alimento {
     grupoId: "carbo",
     unidadeBaseId: "g",
     porcao: null,
+    quantidadeLivre: false,
     medidas: [],
     atributos: { semGluten: null, semLactose: null },
     tags: [],
@@ -291,4 +301,108 @@ test("arredonda grama para inteiro e unidade discreta para meio", () => {
   assert.equal(arredondarExibicao(7.24, grama), 7.2);
   assert.equal(arredondarExibicao(1.3, fatia), 1.5);
   assert.equal(arredondarExibicao(0.1, fatia), 0.5);
+});
+
+// ---------------------------------------------------------------- carboidrato → fruta
+
+/**
+ * A regra de mão única do material: 1 porção de carboidrato equivale a 1
+ * porção de fruta, e fruta não vira carboidrato. O que estes testes guardam
+ * não é só o cálculo — é a assimetria, que um campo bidirecional apagaria.
+ */
+const GRUPOS_MAO_UNICA = [grupo("carbo", true, ["fruta"]), grupo("fruta", true)];
+
+const ARROZ = alimento("arroz", { grupoId: "carbo", porcao: g(100) });
+const MACA = alimento("maca", { grupoId: "fruta", porcao: g(190) });
+const CTX_MAO_UNICA = contexto([ARROZ, MACA], [], GRUPOS_MAO_UNICA);
+
+test("carboidrato vira fruta: 100 g de arroz são 1 porção, logo 190 g de maçã", () => {
+  const r = calcularTroca({ alimentoOrigem: ARROZ, alimentoDestino: MACA, medida: g(100) }, CTX_MAO_UNICA);
+  assert.equal(r.ok, true);
+  if (!r.ok) return;
+  assert.equal(r.saida.quantidade, 190);
+  assert.equal(r.porcoes, 1);
+  assert.equal(r.origem, "porcoes");
+});
+
+test("a conta escala: 200 g de arroz são 2 porções, logo 380 g de maçã", () => {
+  const r = calcularTroca({ alimentoOrigem: ARROZ, alimentoDestino: MACA, medida: g(200) }, CTX_MAO_UNICA);
+  assert.equal(r.ok, true);
+  if (!r.ok) return;
+  assert.equal(r.saida.quantidade, 380);
+  assert.equal(r.porcoes, 2);
+});
+
+test("fruta NÃO vira carboidrato, e a recusa diz o porquê", () => {
+  const r = calcularTroca({ alimentoOrigem: MACA, alimentoDestino: ARROZ, medida: g(190) }, CTX_MAO_UNICA);
+  assert.equal(r.ok, false);
+  if (r.ok) return;
+  assert.equal(r.motivo, "sentido-nao-permitido");
+  assert.match(r.mensagem, /outro sentido/i);
+});
+
+test("sem a liberação, um grupo não alcança o outro", () => {
+  const ctx = contexto([ARROZ, MACA], [], [grupo("carbo"), grupo("fruta")]);
+  const r = calcularTroca({ alimentoOrigem: ARROZ, alimentoDestino: MACA, medida: g(100) }, ctx);
+  assert.equal(r.ok, false);
+  if (r.ok) return;
+  assert.equal(r.motivo, "sem-equivalencia");
+});
+
+test("quantidade livre não entra em conta de porção, e não é chamada de pendente", () => {
+  const limao = alimento("limao", { grupoId: "fruta", porcao: null, quantidadeLivre: true });
+  const ctx = contexto([ARROZ, MACA, limao], [], GRUPOS_MAO_UNICA);
+  const r = calcularTroca({ alimentoOrigem: MACA, alimentoDestino: limao, medida: g(190) }, ctx);
+  assert.equal(r.ok, false);
+  if (r.ok) return;
+  assert.equal(r.motivo, "quantidade-livre");
+  assert.match(r.mensagem, /livre/i);
+});
+
+// --------------------------------------------- a regra no catálogo de verdade
+
+/**
+ * Os testes acima usam um catálogo de mentira, para isolar o motor. Estes
+ * rodam sobre a lista real: é o que garante que o dado cadastrado e a regra
+ * concordam — e que a paciente nunca chega a ver a troca proibida na tela,
+ * porque `destinosPossiveis` é quem monta o segundo campo.
+ */
+test("no catálogo real, 100 g de arroz viram 190 g de maçã", () => {
+  const arroz = catalogo.alimento("arroz-cozido")!;
+  const maca = catalogo.alimento("maca")!;
+  const r = calcularTroca({ alimentoOrigem: arroz, alimentoDestino: maca, medida: g(100) });
+  assert.equal(r.ok, true);
+  if (!r.ok) return;
+  assert.equal(r.saida.quantidade, 190);
+  assert.equal(r.porcoes, 1);
+});
+
+test("a maçã aparece entre os destinos do arroz", () => {
+  const arroz = catalogo.alimento("arroz-cozido")!;
+  const ids = destinosPossiveis(arroz).map((a) => a.id);
+  assert.ok(ids.includes("maca"), "fruta deveria ser destino de carboidrato");
+});
+
+test("nenhum carboidrato aparece entre os destinos da maçã", () => {
+  const maca = catalogo.alimento("maca")!;
+  const destinos = destinosPossiveis(maca);
+  const carbos = destinos.filter((a) => a.grupoId === "carboidratos").map((a) => a.nome);
+  assert.deepEqual(carbos, [], `a paciente não pode ver carboidrato como destino de fruta: ${carbos.join(", ")}`);
+  assert.ok(destinos.some((a) => a.grupoId === "frutas"), "fruta ainda troca com fruta");
+});
+
+test("o limão não é oferecido como destino nem como origem", () => {
+  const limao = catalogo.alimento("limao")!;
+  assert.equal(limao.quantidadeLivre, true);
+  assert.equal(destinosPossiveis(limao).length, 0);
+  const maca = catalogo.alimento("maca")!;
+  assert.ok(!destinosPossiveis(maca).some((a) => a.id === "limao"));
+});
+
+test("a lista inteira está cadastrada com porção, exceto quem é livre", () => {
+  const pendentes = catalogo
+    .alimentos()
+    .filter((a) => !a.porcao && !a.quantidadeLivre)
+    .map((a) => a.nome);
+  assert.deepEqual(pendentes, [], `alimentos sem porção e sem ser livres: ${pendentes.join(", ")}`);
 });

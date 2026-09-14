@@ -15,6 +15,9 @@ export const GRUPOS: GrupoAlimentar[] = [
     ordem: 1,
     regra: { tipo: "porcoes" },
     trocaPorPorcao: true,
+    // Do material: 1 porção de carboidrato equivale a 1 porção de fruta.
+    // Só neste sentido — ver o comentário do grupo das frutas.
+    trocaParaGrupos: ["frutas"],
     tags: ["carboidrato", "massa", "arroz", "pao", "tuberculo"],
   },
   {
@@ -24,6 +27,7 @@ export const GRUPOS: GrupoAlimentar[] = [
     ordem: 2,
     regra: { tipo: "porcoes" },
     trocaPorPorcao: true,
+    trocaParaGrupos: [],
     tags: ["proteina", "carne", "ovo", "peixe", "frango"],
   },
   {
@@ -33,6 +37,7 @@ export const GRUPOS: GrupoAlimentar[] = [
     ordem: 3,
     regra: { tipo: "porcoes" },
     trocaPorPorcao: true,
+    trocaParaGrupos: [],
     tags: ["gordura", "azeite", "castanha", "abacate"],
   },
   {
@@ -42,6 +47,9 @@ export const GRUPOS: GrupoAlimentar[] = [
     ordem: 4,
     regra: { tipo: "porcoes" },
     trocaPorPorcao: true,
+    // Vazio de propósito: fruta não substitui carboidrato. A regra do
+    // material vale num sentido só, e é o campo do carboidrato que a diz.
+    trocaParaGrupos: [],
     tags: ["fruta"],
   },
   {
@@ -59,6 +67,7 @@ export const GRUPOS: GrupoAlimentar[] = [
     },
     // Não há troca por porção aqui: o grupo não trabalha em porções fechadas.
     trocaPorPorcao: false,
+    trocaParaGrupos: [],
     tags: ["vegetal", "legume", "verdura", "salada", "livre"],
   },
   {
@@ -68,6 +77,7 @@ export const GRUPOS: GrupoAlimentar[] = [
     ordem: 6,
     regra: null,
     trocaPorPorcao: false,
+    trocaParaGrupos: [],
     tags: ["outros"],
   },
 ];
