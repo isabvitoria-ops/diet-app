@@ -21,13 +21,14 @@ test("a conta que morava nela virou a frase do topo de Comer fora", () => {
   assert.match(String(frase.valor), /duas meias refeições equivalem a uma completa/i);
 });
 
-test("hambúrguer tem as três casas, separadas em lanchonete e artesanal", () => {
+test("hambúrguer tem as quatro casas, separadas em lanchonete e artesanal", () => {
   const casas = porId.get("hamburguer")?.estabelecimentos ?? [];
   assert.deepEqual(
     casas.map((c) => [c.nome, c.grupo]),
     [
       ["McDonald's", "Lanchonetes"],
       ["Burger King", "Lanchonetes"],
+      ["Subway", "Lanchonetes"],
       ["Artesanal", "Artesanais"],
     ],
   );
@@ -112,11 +113,45 @@ test("as marcas com logo têm logo; quem não tem cai na inicial", () => {
   }
 });
 
-test("o Subway está publicado com as três montagens", () => {
-  const subway = porId.get("subway");
-  assert.equal(subway?.status, "publicado");
-  const opcoes = subway?.decisoes.flatMap((d) => d.opcoes) ?? [];
-  assert.deepEqual(opcoes.map((o) => o.nivel), ["melhor", "boa", "ocasional"]);
+test("o Subway virou lanchonete dentro de Hambúrguer, e não categoria solta", () => {
+  assert.equal(porId.has("subway"), false, "não pode sobrar categoria Subway na raiz");
+  const subway = porId.get("hamburguer")?.estabelecimentos.find((c) => c.id === "subway");
+  assert.ok(subway, "o Subway precisa estar dentro de Hambúrguer");
+  assert.deepEqual(subway.opcoes.map((o) => o.nivel), ["melhor", "boa", "ocasional"]);
+});
+
+/**
+ * O que ela pediu depois de ver as telas: onde a casa ja diz tudo, a seção de
+ * "montagem" era repetição. Onde a categoria tem uma casa só, a lista de um
+ * item era um toque a mais para chegar ao mesmo lugar.
+ */
+test("as categorias com casa não repetem o conteúdo em decisões", () => {
+  for (const categoria of CATEGORIAS_COMER_FORA) {
+    if (categoria.estabelecimentos.length === 0) continue;
+    assert.deepEqual(
+      categoria.decisoes,
+      [],
+      `${categoria.nome} tem casa e decisão ao mesmo tempo — uma das duas está repetindo a outra`,
+    );
+  }
+});
+
+test("o que não está nos combos não se perdeu junto com as seções", () => {
+  const japones = porId
+    .get("japonesa")
+    ?.estabelecimentos.find((c) => c.id === "restaurante-japones");
+  assert.match(japones?.observacoes.join(" ") ?? "", /salmão/i, "a nota do salmão precisa sobreviver");
+
+  assert.match(
+    porId.get("massas")?.lembretes.join(" ") ?? "",
+    /molho ao sugo/i,
+    "a orientação de molho precisa sobreviver",
+  );
+  assert.match(
+    porId.get("pizza")?.lembretes.join(" ") ?? "",
+    /proteína/i,
+    "a orientação de recheio precisa sobreviver",
+  );
 });
 
 test("identificador de casa não se repete dentro da categoria", () => {

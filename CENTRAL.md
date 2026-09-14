@@ -397,13 +397,24 @@ refeição"; a casa dentro dela responde "e naquele lugar ali, o que eu peço?".
 
 | Categoria | O que tem |
 |---|---|
-| Hambúrguer | As montagens do material, mais três casas: McDonald's e Burger King em *Lanchonetes*, Artesanal em *Artesanais* — cada uma com melhor escolha, boa opção e mais ocasional |
-| Subway | As três montagens do balcão, com kcal |
-| Comida japonesa | Entradas, combinados, temaki, fritos e molhos cremosos, com as 4 observações |
-| Massas | As 3 montagens, com molho ao sugo, proteína e a dica do Spoleto; o Spoleto já está como casa, sem opções |
-| Pizza | 3 fatias de massa fina ou 2 de massa grossa, com a nota do recheio |
-| Açaí | 500 ml como completa, 300 ml como meia |
+| Hambúrguer | McDonald's, Burger King e Subway em *Lanchonetes*; Artesanal em *Artesanais* |
+| Comida japonesa | Restaurante japonês |
+| Massas | Spoleto e Restaurante italiano |
+| Pizza | Pizzaria |
+| Açaí | Açaiteria |
 | Doces e sobremesas | As 6 meias refeições doces |
+| Barzinho | Com drink e Com chopp, duas doses cada |
+
+Cada casa tem melhor escolha, boa opção e mais ocasional, com kcal por item e
+total. Categoria com **uma casa só** mostra o conteúdo dela direto — a lista de
+um item era um toque a mais para chegar ao mesmo lugar.
+
+**As seções de "montagem" saíram** onde a casa passou a dizer o mesmo de forma
+mais concreta: hambúrguer, japonesa, massas, pizza e açaí. O que não estava nos
+combos mudou de lugar em vez de sumir — a nota do salmão foi para as
+observações do restaurante japonês, as orientações de molho e de recheio
+viraram lembretes de Massas e Pizza. Um teste garante que nenhuma categoria
+tenha casa e decisão ao mesmo tempo, que é a forma de a repetição voltar.
 
 Restaurantes e Delivery seguem reservados, sem conteúdo.
 

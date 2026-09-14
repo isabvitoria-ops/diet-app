@@ -4,6 +4,7 @@ import type { EstabelecimentoComerFora, NivelEscolha } from "@/central/types";
 import { catalogo } from "@/central/dados/catalogo";
 import { CabecalhoPagina } from "@/central/components/CabecalhoPagina";
 import { CartaoOpcao } from "@/central/components/CartaoOpcao";
+import { ConteudoDaCasa } from "@/central/components/ConteudoDaCasa";
 import { EstadoVazio } from "@/central/components/EstadoVazio";
 import { BotaoFavorito } from "@/central/components/BotaoFavorito";
 import { Icone } from "@/central/components/Icone";
@@ -36,6 +37,10 @@ export function CategoriaDetalhe() {
 
   // As casas viram seções pelo campo `grupo` — é ele que separa lanchonete de
   // artesanal. Quem não tem grupo cai numa seção genérica em vez de sumir.
+  // Uma casa só não merece uma lista de um item: seria um toque a mais para
+  // chegar ao mesmo lugar. O conteúdo dela aparece direto aqui.
+  const casaUnica = categoria?.estabelecimentos.length === 1 ? categoria.estabelecimentos[0]! : null;
+
   const porGrupo = useMemo(() => {
     const casas = [...(categoria?.estabelecimentos ?? [])].sort(
       (a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome, "pt-BR"),
@@ -96,34 +101,44 @@ export function CategoriaDetalhe() {
           />
         )}
 
-        {porGrupo.map(([grupo, casas]) => (
-          <section className="c-secao" key={grupo}>
-            <h2 className="c-secao-titulo">{grupo}</h2>
-            <div className="c-casas">
-              {casas.map((casa) => (
-                <button
-                  key={casa.id}
-                  type="button"
-                  className="c-casa"
-                  onClick={() => navegar(rotas.estabelecimento(categoria.id, casa.id))}
-                >
-                  <Logo nome={casa.nome} logo={casa.logo} tamanho={44} />
-                  <span className="c-casa-texto">
-                    <strong>{casa.nome}</strong>
-                    <span>
-                      {casa.opcoes.length === 0
-                        ? "Opções em preparação"
-                        : `${casa.opcoes.length} ${casa.opcoes.length === 1 ? "opção" : "opções"}`}
+        {casaUnica && (
+          <ConteudoDaCasa
+            casa={casaUnica}
+            categoriaId={categoria.id}
+            categoriaNome={categoria.nome}
+            mostrarLogo={false}
+          />
+        )}
+
+        {!casaUnica &&
+          porGrupo.map(([grupo, casas]) => (
+            <section className="c-secao" key={grupo}>
+              <h2 className="c-secao-titulo">{grupo}</h2>
+              <div className="c-casas">
+                {casas.map((casa) => (
+                  <button
+                    key={casa.id}
+                    type="button"
+                    className="c-casa"
+                    onClick={() => navegar(rotas.estabelecimento(categoria.id, casa.id))}
+                  >
+                    <Logo nome={casa.nome} logo={casa.logo} tamanho={44} />
+                    <span className="c-casa-texto">
+                      <strong>{casa.nome}</strong>
+                      <span>
+                        {casa.opcoes.length === 0
+                          ? "Opções em preparação"
+                          : `${casa.opcoes.length} ${casa.opcoes.length === 1 ? "opção" : "opções"}`}
+                      </span>
                     </span>
-                  </span>
-                  <span className="c-casa-seta">
-                    <Icone nome="seta" tamanho={18} />
-                  </span>
-                </button>
-              ))}
-            </div>
-          </section>
-        ))}
+                    <span className="c-casa-seta">
+                      <Icone nome="seta" tamanho={18} />
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          ))}
 
         {/* Os filtros ficam aqui, e não no topo: eles agem sobre as decisões.
             Em cima das casas eles prometeriam um recorte que não fazem — e a

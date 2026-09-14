@@ -115,7 +115,9 @@ a(`-- ==========================================================================
 -- intactos. Categoria que VOCÊ criou pelo painel também fica: ele só toca nos
 -- identificadores que vêm das sementes.
 --
--- O que ele APAGA, de propósito: a categoria "Refeição livre".
+-- O que ele APAGA, de propósito: as categorias que saíram do ar (Refeição
+-- livre e Subway, que virou lanchonete dentro de Hambúrguer) e os favoritos
+-- que apontavam para conteúdo que não existe mais.
 --
 -- Onde rodar: Supabase → SQL Editor → New query → colar tudo → Run.
 -- =============================================================================
@@ -147,11 +149,51 @@ for (const x of CATEGORIAS_COMER_FORA) {
   a(`insert into conteudos (id, tipo, titulo, tema, resumo, icone, ordem, status, corpo, tags) values (${txt(x.id)}, 'comer_fora', ${txt(x.nome)}, null, ${txt(x.resumo)}, ${txt(x.icone)}, ${num(x.ordem)}, ${txt(x.status === "publicado" ? "publicado" : "rascunho")}, ${json(corpo)}, ${arr(x.tags)}) on conflict (id) do update set titulo = excluded.titulo, resumo = excluded.resumo, icone = excluded.icone, ordem = excluded.ordem, status = excluded.status, corpo = excluded.corpo, tags = excluded.tags, atualizado_em = now();`);
 }
 
+/*
+ * Limpeza do que saiu do ar por decisão dela.
+ *
+ * O upsert acima corrige o que existe, mas não apaga o que deixou de existir:
+ * uma categoria removida das sementes continuaria publicada no banco dela. E
+ * favorito que aponta para conteúdo apagado vira link morto na tela de Salvos
+ * — some junto, senão a paciente clica e não chega a lugar nenhum.
+ */
+const CATEGORIAS_REMOVIDAS = [
+  // A conta que morava na "Refeição livre" virou a frase do topo de Comer fora.
+  "refeicao-livre",
+  // O Subway não boia mais na raiz: virou lanchonete dentro de Hambúrguer.
+  "subway",
+];
+
+// Opções que saíram quando as seções viraram repetição das casas.
+const OPCOES_REMOVIDAS = [
+  "hamburguer:hamburguer-simples",
+  "hamburguer:hamburguer-denso",
+  "hamburguer:hamburguer-completa",
+  "japonesa:sunomono",
+  "japonesa:missoshiro",
+  "japonesa:edamame",
+  "japonesa:sashimi",
+  "japonesa:niguiri",
+  "japonesa:temaki-simples",
+  "japonesa:fritos",
+  "japonesa:molhos-cremosos",
+  "massas:massa-camarao",
+  "massas:massa-frango",
+  "massas:massa-lasanha",
+  "pizza:pizza-fina",
+  "pizza:pizza-grossa",
+  "acai:acai-500",
+  "acai:acai-300",
+  "subway:subway-melhor",
+  "subway:subway-boa",
+  "subway:subway-ocasional",
+];
+
 a(`
--- A aba "Refeição livre" saiu a pedido dela. A conta que morava lá virou a
--- frase do topo de Comer fora, logo abaixo.
-delete from favoritos where tipo = 'categoria' and ref_id = 'refeicao-livre';
-delete from conteudos where id = 'refeicao-livre';
+-- O que saiu do ar, e os favoritos que apontavam para lá.
+delete from favoritos where tipo = 'categoria' and ref_id in (${CATEGORIAS_REMOVIDAS.map(txt).join(", ")});
+delete from favoritos where tipo = 'opcao' and ref_id in (${OPCOES_REMOVIDAS.map(txt).join(", ")});
+delete from conteudos where id in (${CATEGORIAS_REMOVIDAS.map(txt).join(", ")});
 `);
 
 a("-- Configurações ---------------------------------------------------------------");

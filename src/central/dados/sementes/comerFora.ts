@@ -122,7 +122,7 @@ export const CATEGORIAS_COMER_FORA: CategoriaComerFora[] = [
     ordem: 1,
     status: "publicado",
     introducao:
-      "Compare as montagens antes de pedir. A diferença costuma estar no número de camadas, não no lanche em si.",
+      "Escolha o lugar e veja o que pedir. A diferença entre uma opção e outra costuma estar nos acompanhamentos, não no lanche em si.",
     estabelecimentos: [
       casa({
         id: "mcdonalds",
@@ -203,6 +203,48 @@ export const CATEGORIAS_COMER_FORA: CategoriaComerFora[] = [
         ],
       }),
       casa({
+        id: "subway",
+        nome: "Subway",
+        grupo: "Lanchonetes",
+        // Sem logo: a marca não está em nenhum acervo aberto. A nutricionista
+        // envia pelo painel, e até lá a tela mostra a inicial.
+        logo: null,
+        ordem: 3,
+        resumo: "Montagens do balcão, das mais leves às mais ocasionais.",
+        opcoes: [
+          opcao({
+            id: "subway-melhor",
+            titulo: "Frango assado",
+            descricao: "Pão 9 grãos, sem queijo, molho mostarda e mel. Com refrigerante zero.",
+            nivel: "melhor",
+            detalhes: ["Sanduíche — 356 kcal", "Refrigerante zero — 0 kcal"],
+            kcal: 356,
+            mostrarKcal: true,
+            tags: ["sanduiche", "combo"],
+          }),
+          opcao({
+            id: "subway-boa",
+            titulo: "Frango empanado",
+            descricao: "Pão italiano, molho barbecue. Com refrigerante zero.",
+            nivel: "boa",
+            detalhes: ["Sanduíche — 419 kcal", "Refrigerante zero — 0 kcal"],
+            kcal: 419,
+            mostrarKcal: true,
+            tags: ["sanduiche", "combo"],
+          }),
+          opcao({
+            id: "subway-ocasional",
+            titulo: "B.M.T. Italiano",
+            descricao: "Três carnes e queijo. Com refrigerante zero.",
+            nivel: "ocasional",
+            detalhes: ["Sanduíche — 732 kcal", "Refrigerante zero — 0 kcal"],
+            kcal: 732,
+            mostrarKcal: true,
+            tags: ["sanduiche", "combo"],
+          }),
+        ],
+      }),
+      casa({
         id: "hamburgueria-artesanal",
         nome: "Artesanal",
         grupo: "Artesanais",
@@ -249,36 +291,7 @@ export const CATEGORIAS_COMER_FORA: CategoriaComerFora[] = [
         ],
       }),
     ],
-    decisoes: [
-      {
-        id: "montagem",
-        titulo: "A montagem do lanche",
-        pergunta: "Quantas camadas o lanche tem?",
-        observacoes: [],
-        opcoes: [
-          opcao({ id: "hamburguer-simples", titulo: "Montagem mais simples", nivel: "melhor", tags: ["simples"] }),
-          opcao({
-            id: "hamburguer-denso",
-            titulo: "Combinações mais densas em energia",
-            nivel: "ocasional",
-            tags: ["duplo", "bacon", "cheddar"],
-          }),
-        ],
-      },
-      {
-        id: "completa",
-        titulo: "Como refeição livre completa",
-        pergunta: null,
-        observacoes: [],
-        opcoes: [
-          opcao({
-            id: "hamburguer-completa",
-            titulo: "Hambúrguer, batata frita pequena e refrigerante zero açúcar",
-            tags: ["refeicao livre"],
-          }),
-        ],
-      },
-    ],
+    decisoes: [],
     lembretes: [],
     tags: ["hamburguer", "lanche", "burger"],
   },
@@ -302,7 +315,11 @@ export const CATEGORIAS_COMER_FORA: CategoriaComerFora[] = [
         logo: "data:image/svg+xml,<svg viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg'><ellipse cx='32' cy='50' rx='27' ry='6' fill='%23EFEAE1'/><rect x='8' y='30' width='20' height='19' rx='5' fill='%23FBF8F3' stroke='%23E6E1D9' stroke-width='1.5'/><rect x='12' y='26' width='12' height='8' rx='3' fill='%23E98A5E'/><path d='M12 29h12' stroke='%23F6C0A4' stroke-width='1.6'/><rect x='33' y='27' width='22' height='22' rx='6' fill='%23FBF8F3' stroke='%23E6E1D9' stroke-width='1.5'/><rect x='36' y='30' width='16' height='16' rx='4' fill='%233E4A3A'/><circle cx='44' cy='38' r='5' fill='%23FBF8F3'/><circle cx='44' cy='38' r='2.6' fill='%23E98A5E'/><path d='M6 22c6-4 14-4 20 0' stroke='%237FA35A' stroke-width='2.4' stroke-linecap='round' fill='none'/></svg>",
         ordem: 1,
         resumo: "Valores estimados — variam de casa para casa.",
-        observacoes: ["Restaurante japonês não tem tabela publicada, então estes números são estimativa. Use como ordem de grandeza, não como medida."],
+        observacoes: [
+          "Restaurante japonês não tem tabela publicada, então estes números são estimativa. Use como ordem de grandeza, não como medida.",
+          "Molho shoyu tradicional ou light.",
+          "O salmão é um peixe muito saudável, mas é rico em gordura, o que eleva o valor calórico da refeição. Para reduzir, prefira atum, peixe branco ou camarão.",
+        ],
         opcoes: [
           opcao({
             id: "restaurante-japones-melhor",
@@ -340,51 +357,7 @@ export const CATEGORIAS_COMER_FORA: CategoriaComerFora[] = [
         ],
       }),
     ],
-    decisoes: [
-      {
-        id: "entradas",
-        titulo: "Entradas",
-        pergunta: "Por onde começar?",
-        observacoes: [],
-        opcoes: [
-          opcao({ id: "sunomono", titulo: "Sunomono", nivel: "melhor", tags: ["sunomono", "pepino"] }),
-          opcao({ id: "missoshiro", titulo: "Missoshiro", nivel: "melhor", tags: ["missoshiro", "sopa", "miso"] }),
-          opcao({ id: "edamame", titulo: "Edamame", nivel: "melhor", tags: ["edamame", "soja"] }),
-        ],
-      },
-      {
-        id: "principal",
-        titulo: "Combinados",
-        pergunta: "O que pedir depois das entradas?",
-        observacoes: [
-          "Sugestão de 20 peças.",
-          "Peças simples, sem molho.",
-          "Molho shoyu tradicional ou light.",
-          "O salmão é um peixe muito saudável, mas é rico em gordura, o que eleva o valor calórico da refeição. Para reduzir, prefira atum, peixe branco ou camarão.",
-        ],
-        opcoes: [
-          opcao({ id: "sashimi", titulo: "Sashimi", nivel: "melhor", tags: ["sashimi", "peixe"] }),
-          opcao({ id: "niguiri", titulo: "Niguiri", nivel: "boa", tags: ["niguiri", "sushi"] }),
-          opcao({
-            id: "temaki-simples",
-            titulo: "Temaki simples, sem cream cheese",
-            descricao: "Conta como meia refeição livre.",
-            nivel: "boa",
-            tags: ["temaki"],
-          }),
-        ],
-      },
-      {
-        id: "ocasionais",
-        titulo: "Preparações fritas e molhos cremosos",
-        pergunta: "E os itens que aparecem no rodízio?",
-        observacoes: [],
-        opcoes: [
-          opcao({ id: "fritos", titulo: "Preparações fritas", nivel: "ocasional", tags: ["frito", "tempura", "hot"] }),
-          opcao({ id: "molhos-cremosos", titulo: "Molhos cremosos", nivel: "ocasional", tags: ["molho", "cremoso"] }),
-        ],
-      },
-    ],
+    decisoes: [],
     lembretes: [],
     tags: ["japonesa", "japones", "sushi", "sashimi", "rodizio", "temaki"],
   },
@@ -488,32 +461,11 @@ export const CATEGORIAS_COMER_FORA: CategoriaComerFora[] = [
         ],
       }),
     ],
-    decisoes: [
-      {
-        id: "montagens",
-        titulo: "Montagens que fecham uma refeição completa",
-        pergunta: "Qual delas combina com o lugar onde você está?",
-        observacoes: [
-          "Prefira o molho ao sugo.",
-          "Adicione proteína para trazer mais saciedade: massa e frango, massa e camarão, massa e carne magra.",
-          "Boa opção de restaurante: Spoleto.",
-        ],
-        opcoes: [
-          opcao({
-            id: "massa-camarao",
-            titulo: "Massa (200 g) com camarão (120 g), ricota temperada e molho pesto",
-            tags: ["camarao", "pesto", "ricota"],
-          }),
-          opcao({
-            id: "massa-frango",
-            titulo: "Massa (100 g) com frango, legumes e molho pomodoro",
-            tags: ["frango", "pomodoro", "legumes"],
-          }),
-          opcao({ id: "massa-lasanha", titulo: "Lasanha bolonhesa", tags: ["lasanha", "bolonhesa"] }),
-        ],
-      },
+    decisoes: [],
+    lembretes: [
+      "Prefira o molho ao sugo.",
+      "Adicione proteína para trazer mais saciedade: massa e frango, massa e camarão, massa e carne magra.",
     ],
-    lembretes: [],
     tags: ["massa", "macarrao", "italiano", "molho", "spoleto", "lasanha"],
   },
 
@@ -573,25 +525,10 @@ export const CATEGORIAS_COMER_FORA: CategoriaComerFora[] = [
         ],
       }),
     ],
-    decisoes: [
-      {
-        id: "fatias",
-        titulo: "Quantas fatias",
-        pergunta: "Qual é a massa da pizzaria?",
-        observacoes: [
-          "Prefira opções com proteína e sem muita adição de queijo, como frango ou carne seca.",
-        ],
-        opcoes: [
-          opcao({ id: "pizza-fina", titulo: "3 fatias de massa fina", tags: ["massa fina"] }),
-          opcao({
-            id: "pizza-grossa",
-            titulo: "2 fatias de massa grossa ou de borda recheada",
-            tags: ["massa grossa", "borda recheada"],
-          }),
-        ],
-      },
+    decisoes: [],
+    lembretes: [
+      "Prefira opções com proteína e sem muita adição de queijo, como frango ou carne seca.",
     ],
-    lembretes: [],
     tags: ["pizza", "pizzaria", "fatia", "borda"],
   },
 
@@ -651,28 +588,7 @@ export const CATEGORIAS_COMER_FORA: CategoriaComerFora[] = [
         ],
       }),
     ],
-    decisoes: [
-      {
-        id: "tamanho",
-        titulo: "O tamanho da tigela",
-        pergunta: "Quanto vem no copo?",
-        observacoes: [],
-        opcoes: [
-          opcao({
-            id: "acai-500",
-            titulo: "500 ml com banana e leite condensado",
-            descricao: "Fecha uma refeição livre completa.",
-            tags: ["completa"],
-          }),
-          opcao({
-            id: "acai-300",
-            titulo: "300 ml com 1 fruta e leite condensado",
-            descricao: "Conta como meia refeição livre.",
-            tags: ["meia"],
-          }),
-        ],
-      },
-    ],
+    decisoes: [],
     lembretes: [],
     tags: ["acai", "tigela", "copo"],
   },
@@ -731,7 +647,7 @@ export const CATEGORIAS_COMER_FORA: CategoriaComerFora[] = [
     resumo: "O que pedir para beber, e o que costuma acompanhar.",
     icone: "taca",
     logo: null,
-    ordem: 8,
+    ordem: 7,
     status: "publicado",
     introducao:
       "As contas abaixo são para duas doses — é o mínimo que costuma acontecer numa saída. Os números são estimativa: bar não publica tabela, e a receita muda de casa para casa.",
@@ -825,63 +741,8 @@ export const CATEGORIAS_COMER_FORA: CategoriaComerFora[] = [
   },
 
   // Categorias já reservadas — aparecem na grade e na busca, ainda sem conteúdo.
-  {
-    id: "subway",
-    nome: "Subway",
-    resumo: "Montagens do balcão, das mais leves às mais ocasionais.",
-    icone: "sanduiche",
-    // Sem logo ainda: a marca não está em nenhum acervo aberto. A
-    // nutricionista envia pelo painel, e até lá a tela mostra a inicial.
-    logo: null,
-    ordem: 7,
-    status: "publicado",
-    introducao: null,
-    decisoes: [
-      {
-        id: "combos",
-        titulo: "Sanduíche e bebida",
-        pergunta: "Três montagens, da mais leve à mais ocasional.",
-        observacoes: [],
-        opcoes: [
-          opcao({
-            id: "subway-melhor",
-            titulo: "Frango assado",
-            descricao: "Pão 9 grãos, sem queijo, molho mostarda e mel. Com refrigerante zero.",
-            nivel: "melhor",
-            detalhes: ["Sanduíche — 356 kcal", "Refrigerante zero — 0 kcal"],
-            kcal: 356,
-            mostrarKcal: true,
-            tags: ["sanduiche", "combo"],
-          }),
-          opcao({
-            id: "subway-boa",
-            titulo: "Frango empanado",
-            descricao: "Pão italiano, molho barbecue. Com refrigerante zero.",
-            nivel: "boa",
-            detalhes: ["Sanduíche — 419 kcal", "Refrigerante zero — 0 kcal"],
-            kcal: 419,
-            mostrarKcal: true,
-            tags: ["sanduiche", "combo"],
-          }),
-          opcao({
-            id: "subway-ocasional",
-            titulo: "B.M.T. Italiano",
-            descricao: "Três carnes e queijo. Com refrigerante zero.",
-            nivel: "ocasional",
-            detalhes: ["Sanduíche — 732 kcal", "Refrigerante zero — 0 kcal"],
-            kcal: 732,
-            mostrarKcal: true,
-            tags: ["sanduiche", "combo"],
-          }),
-        ],
-      },
-    ],
-    estabelecimentos: [],
-    lembretes: [],
-    tags: ["subway", "sanduiche", "sub"],
-  },
-  { id: "restaurantes", nome: "Restaurantes", resumo: null, icone: "restaurante", logo: null, ordem: 9, status: "em-preparacao", introducao: null, decisoes: [], estabelecimentos: [], lembretes: [], tags: ["restaurante", "self service", "buffet", "por quilo"] },
-  { id: "delivery", nome: "Delivery", resumo: null, icone: "delivery", logo: null, ordem: 10, status: "em-preparacao", introducao: null, decisoes: [], estabelecimentos: [], lembretes: [], tags: ["delivery", "ifood", "entrega"] },
+  { id: "restaurantes", nome: "Restaurantes", resumo: null, icone: "restaurante", logo: null, ordem: 8, status: "em-preparacao", introducao: null, decisoes: [], estabelecimentos: [], lembretes: [], tags: ["restaurante", "self service", "buffet", "por quilo"] },
+  { id: "delivery", nome: "Delivery", resumo: null, icone: "delivery", logo: null, ordem: 9, status: "em-preparacao", introducao: null, decisoes: [], estabelecimentos: [], lembretes: [], tags: ["delivery", "ifood", "entrega"] },
 ];
 
 export const CATEGORIA_COMER_FORA_POR_ID: ReadonlyMap<string, CategoriaComerFora> = new Map(
