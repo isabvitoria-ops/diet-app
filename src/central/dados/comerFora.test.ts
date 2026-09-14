@@ -85,7 +85,13 @@ test("os totais em kcal batem com a soma dos itens", () => {
 });
 
 test("o que é estimativa diz que é estimativa", () => {
-  const estimadas = ["hamburgueria-artesanal", "restaurante-italiano"];
+  const estimadas = [
+    "hamburgueria-artesanal",
+    "restaurante-italiano",
+    "restaurante-japones",
+    "pizzaria",
+    "acaiteria",
+  ];
   for (const id of estimadas) {
     const casa = CATEGORIAS_COMER_FORA.flatMap((c) => c.estabelecimentos).find((c) => c.id === id);
     assert.ok(casa, `${id} precisa existir`);
@@ -122,5 +128,41 @@ test("identificador de casa não se repete dentro da categoria", () => {
 
 test("a ordem das categorias não tem buraco nem repetição", () => {
   const ordens = CATEGORIAS_COMER_FORA.map((c) => c.ordem).sort((a, b) => a - b);
-  assert.deepEqual(ordens, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  assert.deepEqual(
+    ordens,
+    Array.from({ length: CATEGORIAS_COMER_FORA.length }, (_, i) => i + 1),
+  );
+});
+
+test("o barzinho separa drink de chopp e avisa que é estimativa", () => {
+  const bar = porId.get("barzinho");
+  assert.equal(bar?.status, "publicado");
+  assert.deepEqual(bar?.decisoes.map((d) => d.titulo), ["Com drink", "Com chopp"]);
+  assert.match(bar?.introducao ?? "", /estimativa/i);
+  assert.match(bar?.introducao ?? "", /duas doses/i);
+  for (const decisao of bar?.decisoes ?? []) {
+    assert.deepEqual(decisao.opcoes.map((o) => o.nivel), ["melhor", "boa", "ocasional"]);
+    for (const opcao of decisao.opcoes) {
+      assert.match(opcao.energia?.observacao ?? "", /estimativa/i, opcao.titulo);
+    }
+  }
+});
+
+test("todo combo com kcal por item bate com o total, em toda categoria", () => {
+  const todas = CATEGORIAS_COMER_FORA.flatMap((c) => [
+    ...c.estabelecimentos.flatMap((e) => e.opcoes),
+    ...c.decisoes.flatMap((d) => d.opcoes),
+  ]);
+  let conferidos = 0;
+  for (const opcao of todas) {
+    const soma = opcao.detalhes
+      .map((d) => Number(d.match(/(\d+) kcal/)?.[1] ?? NaN))
+      .filter((n) => !Number.isNaN(n))
+      .reduce((a, b) => a + b, 0);
+    if (soma > 0 && opcao.energia?.kcal) {
+      assert.equal(opcao.energia.kcal, soma, `${opcao.titulo}: ${opcao.energia.kcal} ≠ ${soma}`);
+      conferidos += 1;
+    }
+  }
+  assert.ok(conferidos >= 15, `só ${conferidos} combos tinham kcal por item para conferir`);
 });
