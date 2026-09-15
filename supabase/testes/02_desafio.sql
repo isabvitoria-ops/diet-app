@@ -50,6 +50,11 @@ values (
   'ativo'
 );
 
+-- O 0012 faz todo desafio nascer com as ações. A bateria precisa dos seus
+-- próprios identificadores para conferir cada caso, então troca as copiadas
+-- pelas dela.
+delete from desafio_acoes where desafio_id = '00000000-0000-0000-0000-00000000d001';
+
 insert into desafio_acoes (id, desafio_id, chave, nome, pontos, periodicidade, ordem) values
   ('00000000-0000-0000-0000-00000000a001', '00000000-0000-0000-0000-00000000d001',
    'questionario', 'Questionário semanal', 5, 'semanal', 1),
@@ -529,8 +534,46 @@ end;
 $$;
 commit;
 
+-- =============================================================================
+-- Criação de desafio (0012) — os dois furos que apareceram no uso real.
+-- =============================================================================
+
+-- Desafio novo nasce com as ações, sem ninguém cadastrar nada.
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', true);
+insert into desafios (id, nome, data_inicio, data_fim, status)
+values ('00000000-0000-0000-0000-00000000d009', 'Desafio do mês que vem',
+        hoje_sp() + 40, hoje_sp() + 69, 'rascunho');
+select teste('desafio novo já vem com as ações',
+  (select count(*) from desafio_acoes
+   where desafio_id = '00000000-0000-0000-0000-00000000d009') = 5);
+select teste('e com a mesma pontuação do desafio anterior',
+  (select sum(pontos) from desafio_acoes
+   where desafio_id = '00000000-0000-0000-0000-00000000d009') =
+  (select sum(pontos) from desafio_acoes
+   where desafio_id = '00000000-0000-0000-0000-00000000d001'));
+
+-- A nutricionista consegue ver a tela da paciente.
+select teste('nutricionista vê o desafio em modo de prévia',
+  (meu_desafio() ->> 'temDesafio')::boolean and (meu_desafio() ->> 'previa')::boolean);
+select teste('na prévia ela não tem pontos nem posição',
+  (meu_desafio() ->> 'pontosNoMes')::int = 0 and meu_desafio() -> 'posicao' = 'null'::jsonb);
+select teste('e a prévia mostra o checklist',
+  jsonb_array_length(meu_desafio() -> 'acoes') = 5);
+delete from desafios where id = '00000000-0000-0000-0000-00000000d009';
+commit;
+
+-- Paciente de verdade continua sem prévia.
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', true);
+select teste('paciente não entra em modo de prévia',
+  (meu_desafio() ->> 'previa')::boolean = false);
+commit;
+
 select
-  count(*) filter (where passou) || '/' || count(*) || ' verificações das fechaduras passaram' as resultado
+  count(*) filter (where passou) || '/' || count(*) || ' verificações das fechaduras e da criação passaram' as resultado
 from resultados_teste;
 
 select string_agg(nome, e'\n') as falhas from resultados_teste where not passou;
@@ -541,6 +584,262 @@ begin
   select count(*) into v_falhas from resultados_teste where not passou;
   if v_falhas > 0 then
     raise exception '% fechadura(s) falharam', v_falhas;
+  end if;
+end;
+$$;
+
+-- =============================================================================
+-- Ajustes do 0013 — duas vezes por semana, indicação de 100, escada de
+-- benefícios, lançamento pela nutricionista.
+-- =============================================================================
+
+truncate resultados_teste;
+
+-- -----------------------------------------------------------------------------
+-- Uma ação que vale duas vezes por semana
+-- -----------------------------------------------------------------------------
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', true);
+update desafio_acoes
+   set max_por_semana = 2, descricao = 'Duas vezes por semana.'
+ where id = '00000000-0000-0000-0000-00000000a003';
+select teste('a nutricionista define o diário como duas vezes por semana',
+  (select max_por_semana from desafio_acoes
+    where id = '00000000-0000-0000-0000-00000000a003') = 2);
+commit;
+
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', true);
+
+select teste('ativa marca o diário a primeira vez',
+  enviar_acao('00000000-0000-0000-0000-00000000a003') is not null);
+select teste('e a segunda vez na mesma semana também entra',
+  enviar_acao('00000000-0000-0000-0000-00000000a003') is not null);
+
+do $$
+declare v_erro boolean := false;
+begin
+  begin perform enviar_acao('00000000-0000-0000-0000-00000000a003');
+  exception when others then v_erro := true; end;
+  perform teste('a terceira é recusada pelo banco, não pela tela', v_erro);
+end;
+$$;
+
+select teste('os dois envios ficaram com ocorrências diferentes',
+  (select count(distinct ocorrencia) from desafio_envios
+    where acao_id = '00000000-0000-0000-0000-00000000a003'
+      and paciente_id = meu_paciente_id() and status <> 'recusado') = 2);
+
+select teste('e a tela recebe os dois envios da semana',
+  (select jsonb_array_length(a -> 'envios')
+     from jsonb_array_elements(meu_desafio() -> 'acoes') a
+    where a ->> 'id' = '00000000-0000-0000-0000-00000000a003') = 2);
+
+select teste('com podeMarcar falso, porque a semana encheu',
+  (select (a ->> 'podeMarcar')::boolean = false
+     from jsonb_array_elements(meu_desafio() -> 'acoes') a
+    where a ->> 'id' = '00000000-0000-0000-0000-00000000a003'));
+
+select teste('e uma ação de uma vez por semana traz maxPorSemana 1',
+  (select (a ->> 'maxPorSemana')::int
+     from jsonb_array_elements(meu_desafio() -> 'acoes') a
+    where a ->> 'id' = '00000000-0000-0000-0000-00000000a004') = 1);
+commit;
+
+-- -----------------------------------------------------------------------------
+-- A nutricionista lança a ação por quem fez e esqueceu de marcar
+-- -----------------------------------------------------------------------------
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', true);
+do $$
+declare v_id uuid;
+begin
+  v_id := conceder_acao(
+    (select id from pacientes where email = 'd-outra@paciente.test'),
+    '00000000-0000-0000-0000-00000000a004');
+  perform teste('a nutricionista lança a ação pela paciente', v_id is not null);
+  perform teste('o envio já nasce aprovado',
+    (select status = 'aprovado' from desafio_envios where id = v_id));
+  perform teste('e o ponto entra pelo mesmo ledger, ligado ao envio',
+    (select count(*) from pontos_lancamentos where envio_id = v_id) = 1);
+  perform teste('lançar de novo a mesma semana é recusado',
+    (select count(*) from desafio_envios
+      where acao_id = '00000000-0000-0000-0000-00000000a004'
+        and paciente_id = (select id from pacientes where email = 'd-outra@paciente.test')
+        and status <> 'recusado') = 1);
+end;
+$$;
+commit;
+
+-- E a paciente não lança nada para si mesma.
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', true);
+do $$
+declare v_estado text := '';
+begin
+  begin perform conceder_acao(meu_paciente_id(), '00000000-0000-0000-0000-00000000a003');
+  exception when others then v_estado := sqlstate; end;
+  -- 42501 e não 23505: a recusa vem da checagem de admin, antes de qualquer
+  -- conta de duplicidade. Se um dia a ordem inverter, este teste acusa.
+  perform teste('paciente NÃO lança ação nem para si mesma', v_estado = '42501');
+end;
+$$;
+commit;
+
+-- -----------------------------------------------------------------------------
+-- Indicação: 100 pontos, e o total não zera no fim do mês
+-- -----------------------------------------------------------------------------
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', true);
+update desafio_acoes set pontos = 100 where id = '00000000-0000-0000-0000-00000000a005';
+commit;
+
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', true);
+select teste('ativa registra uma indicação',
+  registrar_indicacao('Alana', 'alana@teste.test') is not null);
+commit;
+
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', true);
+do $$
+begin
+  perform validar_indicacao((select id from indicacoes where nome_indicada = 'Alana'));
+end;
+$$;
+select teste('a validação lançou 100, não 50',
+  (select pontos from pontos_lancamentos
+    where indicacao_id = (select id from indicacoes where nome_indicada = 'Alana')) = 100);
+
+-- O desafio do mês que vem herda a pontuação, inclusive a da indicação.
+insert into desafios (id, nome, data_inicio, data_fim, status)
+values ('00000000-0000-0000-0000-00000000d013', 'Desafio herdeiro',
+        hoje_sp() + 40, hoje_sp() + 69, 'rascunho');
+select teste('o desafio seguinte nasce com a indicação valendo 100',
+  (select pontos from desafio_acoes
+    where desafio_id = '00000000-0000-0000-0000-00000000d013' and chave = 'indicacao') = 100);
+select teste('e herda também o duas vezes por semana',
+  (select max_por_semana from desafio_acoes
+    where desafio_id = '00000000-0000-0000-0000-00000000d013' and chave = 'diario') = 2);
+delete from desafios where id = '00000000-0000-0000-0000-00000000d013';
+
+-- Indicação não expira: desligada do desafio, ela continua contando.
+update indicacoes set desafio_id = null, criado_em = now() - interval '8 months'
+ where nome_indicada = 'Alana';
+select teste('indicação de meses atrás continua no total da paciente',
+  indicacoes_validadas((select id from pacientes where email = 'd-ativa@paciente.test')) = 1);
+
+select teste('o resumo mostra quem indicou e quantas',
+  (select (x ->> 'validadas')::int from jsonb_array_elements(resumo_indicacoes()) x
+    where x ->> 'nome' = 'Ana Madureira') = 1);
+commit;
+
+-- E uma paciente não conta as indicações de outra.
+begin;
+select set_config('teste.outra_id',
+  (select id::text from pacientes where email = 'd-outra@paciente.test'), false);
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', true);
+do $$
+declare v_estado text := '';
+begin
+  begin perform indicacoes_validadas(current_setting('teste.outra_id')::uuid);
+  exception when others then v_estado := sqlstate; end;
+  perform teste('paciente NÃO conta as indicações de outra', v_estado = '42501');
+end;
+$$;
+select teste('mas conta as suas',
+  indicacoes_validadas(meu_paciente_id()) = 1);
+commit;
+
+-- O resumo é só dela.
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', true);
+do $$
+declare v_erro boolean := false;
+begin
+  begin perform resumo_indicacoes();
+  exception when others then v_erro := true; end;
+  perform teste('paciente NÃO vê o resumo de indicações de todas', v_erro);
+end;
+$$;
+commit;
+
+-- -----------------------------------------------------------------------------
+-- A escada de benefícios
+-- -----------------------------------------------------------------------------
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', true);
+
+select teste('a escada tem quatro degraus',
+  (select count(*) from indicacao_beneficios where ativo) = 4);
+
+select teste('a tela recebe a escada com o degrau alcançado',
+  (select (b ->> 'alcancado')::boolean
+     from jsonb_array_elements(meu_desafio() -> 'beneficiosIndicacao') b
+    where (b ->> 'nivel')::int = 1));
+
+select teste('e o degrau seguinte ainda não',
+  (select (b ->> 'alcancado')::boolean = false
+     from jsonb_array_elements(meu_desafio() -> 'beneficiosIndicacao') b
+    where (b ->> 'nivel')::int = 2));
+
+select teste('o total de indicações vem junto',
+  (meu_desafio() ->> 'indicacoesValidadas')::int = 1);
+
+do $$
+declare v_erro boolean := false;
+begin
+  begin update indicacao_beneficios set texto = 'um milhão de pontos' where nivel = 1;
+  exception when others then v_erro := true; end;
+  perform teste('paciente NÃO reescreve a escada de benefícios',
+    v_erro or (select texto from indicacao_beneficios where nivel = 1) <> 'um milhão de pontos');
+end;
+$$;
+commit;
+
+-- E o visitante sem login não lê nem a escada.
+begin;
+set local role anon;
+do $$
+declare v_erro boolean := false;
+begin
+  begin perform count(*) from indicacao_beneficios;
+  exception when others then v_erro := true; end;
+  perform teste('visitante sem login NÃO lê a escada de benefícios', v_erro);
+
+  v_erro := false;
+  begin perform resumo_indicacoes();
+  exception when others then v_erro := true; end;
+  perform teste('visitante sem login NÃO chama o resumo de indicações', v_erro);
+end;
+$$;
+commit;
+
+-- -----------------------------------------------------------------------------
+-- Resultado
+-- -----------------------------------------------------------------------------
+select
+  count(*) filter (where passou) || '/' || count(*) || ' verificações dos ajustes passaram' as resultado
+from resultados_teste;
+
+select string_agg(nome, e'\n') as falhas from resultados_teste where not passou;
+
+do $$
+declare v_falhas integer;
+begin
+  select count(*) into v_falhas from resultados_teste where not passou;
+  if v_falhas > 0 then
+    raise exception '% ajuste(s) falharam', v_falhas;
   end if;
 end;
 $$;

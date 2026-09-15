@@ -31,8 +31,18 @@ export interface AcaoDoDesafio {
   descricao: string | null;
   pontos: number;
   periodicidade: PeriodicidadeAcao;
-  /** O envio desta semana (ou do desafio). `null` = ainda não marcou. */
-  envio: EnvioDeAcao | null;
+  /** Quantas vezes por semana esta ação pode ser marcada. O diário vale 2. */
+  maxPorSemana: number;
+  /**
+   * Os envios desta semana (ou do desafio), o recusado inclusive — é no
+   * cartão da ação que a paciente lê o motivo de uma recusa.
+   */
+  envios: EnvioDeAcao[];
+  /**
+   * Se ainda cabe marcar. Quem responde é o banco, que é também quem recusa
+   * o envio a mais: a tela não recalcula esta conta.
+   */
+  podeMarcar: boolean;
   /** Quantas vezes esta ação já rendeu pontos. */
   aprovadas: number;
 }
@@ -58,6 +68,13 @@ export interface IndicacaoDaPaciente {
   status: "registrada" | "iniciou" | "validada" | "recusada";
   pontos: number;
   criadoEm: string;
+}
+
+/** Um degrau da escada de indicações: 1 amiga, 2 amigas, 3, 4. */
+export interface BeneficioIndicacao {
+  nivel: number;
+  texto: string;
+  alcancado: boolean;
 }
 
 export interface Recompensa {
@@ -90,6 +107,11 @@ export interface Desafio {
  */
 export interface MeuDesafio {
   temDesafio: boolean;
+  /**
+   * A nutricionista abrindo a tela da paciente. Ela vê tudo, e não pontua
+   * nada: sem cadastro de paciente não há para onde lançar ponto.
+   */
+  previa?: boolean;
   desafio?: Desafio;
   pontosNoMes?: number;
   saldoAcumulado: number;
@@ -100,6 +122,9 @@ export interface MeuDesafio {
   ranking?: LinhaDoRanking[];
   historico?: LancamentoDePontos[];
   indicacoes?: IndicacaoDaPaciente[];
+  /** Total de indicações validadas de sempre — este número não zera no mês. */
+  indicacoesValidadas: number;
+  beneficiosIndicacao: BeneficioIndicacao[];
   recompensas: Recompensa[];
 }
 
@@ -123,6 +148,25 @@ export interface IndicacaoPendente {
   telefoneIndicada: string | null;
   status: IndicacaoDaPaciente["status"];
   criadoEm: string;
+}
+
+/** Quem já indicou alguém, e quantas — "Alana · 1 indicação". */
+export interface ResumoIndicacao {
+  pacienteId: string;
+  nome: string;
+  validadas: number;
+  emAndamento: number;
+}
+
+/** Uma ação do desafio, como a nutricionista a vê para lançar por alguém. */
+export interface AcaoAdmin {
+  id: string;
+  chave: string;
+  nome: string;
+  pontos: number;
+  periodicidade: PeriodicidadeAcao;
+  maxPorSemana: number;
+  ativo: boolean;
 }
 
 export interface PainelDoDesafio {

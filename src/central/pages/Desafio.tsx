@@ -45,8 +45,15 @@ export function Desafio() {
             titulo="Nenhum desafio no ar"
             descricao="Assim que sua nutricionista abrir o desafio do mês, ele aparece aqui."
           />
+          {dados && dados.previa && <AvisoDePrevia />}
           {dados && dados.saldoAcumulado > 0 && (
             <PontoDeVirada saldo={dados.saldoAcumulado} recompensas={dados.recompensas} />
+          )}
+          {dados && (
+            <EscadaDeIndicacao
+              beneficios={dados.beneficiosIndicacao}
+              validadas={dados.indicacoesValidadas}
+            />
           )}
         </div>
       </>
@@ -57,7 +64,7 @@ export function Desafio() {
   const pontosNoMes = dados.pontosNoMes ?? 0;
   const semana = desafio.semanaAtual ?? 1;
   const faixa = periodoDaSemana(desafio.dataInicio, desafio.dataFim, semana);
-  const temPendente = acoes.some((a) => a.envio?.status === "enviado");
+  const temPendente = acoes.some((a) => a.envios.some((e) => e.status === "enviado"));
   const semanais = acoes.filter((a) => a.periodicidade === "semanal");
   const extras = acoes.filter((a) => a.periodicidade !== "semanal");
 
@@ -71,6 +78,8 @@ export function Desafio() {
 
       <div className="c-conteudo">
         {desafio.lema && <p className="c-desafio-lema">{desafio.lema}</p>}
+
+        {dados.previa && <AvisoDePrevia />}
 
         {festejando && (
           <div className="c-festejo" role="status">
@@ -164,6 +173,11 @@ export function Desafio() {
 
         <PontoDeVirada saldo={dados.saldoAcumulado} recompensas={recompensas} />
 
+        <EscadaDeIndicacao
+          beneficios={dados.beneficiosIndicacao}
+          validadas={dados.indicacoesValidadas}
+        />
+
         {desafio.regras && (
           <section className="c-secao c-prosa">
             <h2 className="c-secao-titulo">Como funciona</h2>
@@ -195,9 +209,17 @@ function CartaoAcao({
   const [abrindoIndicacao, definirAbrindoIndicacao] = useState(false);
   const [nomeIndicada, definirNomeIndicada] = useState("");
 
-  const envio = acao.envio;
-  const estado = envio ? ESTADOS[envio.status] : null;
   const ehIndicacao = acao.chave === "indicacao";
+  // Uma ação de duas vezes por semana tem dois estados ao mesmo tempo: pode
+  // ter uma aprovada e outra ainda em conferência. Por isso o cartão mostra
+  // uma linha por envio, e não um estado só.
+  const valendo = acao.envios.filter((e) => e.status !== "recusado");
+  const cabeMais = acao.podeMarcar;
+  const classe = valendo.some((e) => e.status === "aprovado")
+    ? "aprovado"
+    : valendo.length > 0
+      ? "pendente"
+      : "";
 
   async function marcar() {
     if (ehIndicacao) {
@@ -223,7 +245,7 @@ function CartaoAcao({
   }
 
   return (
-    <article className={`c-acao ${estado?.classe ?? ""}`}>
+    <article className={`c-acao ${classe}`}>
       <div className="c-acao-topo">
         <span className="c-acao-texto">
           <strong>{acao.nome}</strong>
@@ -232,56 +254,83 @@ function CartaoAcao({
         <span className="c-acao-pontos">+{acao.pontos}</span>
       </div>
 
-      {estado ? (
-        <div className="c-acao-estado">
-          <span className={`c-selo ${estado.classe === "aprovado" ? "melhor" : estado.classe === "recusado" ? "ocasional" : "neutro"}`}>
-            {estado.rotulo}
-          </span>
-          {envio?.status === "enviado" && (
-            <button
-              type="button"
-              className="c-link"
-              disabled={ocupado}
-              onClick={() => void aoMudar(() => repositorio.cancelarEnvio(envio.id))}
-            >
-              Desfazer
-            </button>
-          )}
-          {envio?.motivoRecusa && <p className="c-dica">{envio.motivoRecusa}</p>}
-        </div>
-      ) : abrindoIndicacao ? (
-        <div className="c-acao-estado">
-          <input
-            className="c-campo"
-            value={nomeIndicada}
-            onChange={(e) => definirNomeIndicada(e.target.value)}
-            placeholder="Nome de quem você indicou"
-            aria-label="Nome de quem você indicou"
-          />
-          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-            <button
-              type="button"
-              className="c-botao c-botao-pequeno"
-              disabled={ocupado || !nomeIndicada.trim()}
-              onClick={() => void registrar()}
-            >
-              Registrar
-            </button>
-            <button type="button" className="c-link" onClick={() => definirAbrindoIndicacao(false)}>
-              Cancelar
-            </button>
-          </div>
-        </div>
-      ) : (
-        <button
-          type="button"
-          className="c-botao c-botao-secundario c-botao-pequeno"
-          disabled={ocupado}
-          onClick={() => void marcar()}
-        >
-          <Icone nome="salvos" tamanho={15} /> Marcar como feito
-        </button>
+      {/* O contador só aparece onde há mais de uma vez para marcar: no
+          diário alimentar, que vale duas. Nas outras seria ruído. */}
+      {acao.periodicidade === "semanal" && acao.maxPorSemana > 1 && (
+        <p className="c-dica">
+          {valendo.length} de {acao.maxPorSemana} nesta semana.
+        </p>
       )}
+
+      {acao.envios.map((envio) => {
+        const estado = ESTADOS[envio.status];
+        if (!estado) return null;
+        return (
+          <div className="c-acao-estado" key={envio.id}>
+            <span
+              className={`c-selo ${
+                estado.classe === "aprovado"
+                  ? "melhor"
+                  : estado.classe === "recusado"
+                    ? "ocasional"
+                    : "neutro"
+              }`}
+            >
+              {estado.rotulo}
+            </span>
+            {envio.status === "enviado" && (
+              <button
+                type="button"
+                className="c-link"
+                disabled={ocupado}
+                onClick={() => void aoMudar(() => repositorio.cancelarEnvio(envio.id))}
+              >
+                Desfazer
+              </button>
+            )}
+            {envio.motivoRecusa && <p className="c-dica">{envio.motivoRecusa}</p>}
+          </div>
+        );
+      })}
+
+      {cabeMais &&
+        (abrindoIndicacao ? (
+          <div className="c-acao-estado">
+            <input
+              className="c-campo"
+              value={nomeIndicada}
+              onChange={(e) => definirNomeIndicada(e.target.value)}
+              placeholder="Nome de quem você indicou"
+              aria-label="Nome de quem você indicou"
+            />
+            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+              <button
+                type="button"
+                className="c-botao c-botao-pequeno"
+                disabled={ocupado || !nomeIndicada.trim()}
+                onClick={() => void registrar()}
+              >
+                Registrar
+              </button>
+              <button
+                type="button"
+                className="c-link"
+                onClick={() => definirAbrindoIndicacao(false)}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="c-botao c-botao-secundario c-botao-pequeno"
+            disabled={ocupado}
+            onClick={() => void marcar()}
+          >
+            <Icone nome="salvos" tamanho={15} /> Marcar como feito
+          </button>
+        ))}
 
       {acao.aprovadas > 0 && (
         <p className="c-dica">
@@ -289,6 +338,67 @@ function CartaoAcao({
         </p>
       )}
     </article>
+  );
+}
+
+// ------------------------------------------------- a nutricionista espiando
+
+/**
+ * A nutricionista não tem cadastro de paciente, então não há para onde lançar
+ * ponto nenhum. Ela vê a tela inteira, e o banco já devolve `podeMarcar`
+ * falso em tudo — a faixa aqui só explica por que os botões sumiram.
+ */
+function AvisoDePrevia() {
+  return (
+    <div className="c-aviso" role="status">
+      <span>
+        Você está vendo a tela como sua paciente vê. Por aqui você não marca nem pontua — quem
+        confere os envios é a aba Desafio do mês, na sua área.
+      </span>
+    </div>
+  );
+}
+
+// ------------------------------------------------------- escada de indicação
+
+/**
+ * Quanto mais ela indica, mais ganha. O total não zera no fim do mês: é a
+ * mesma regra dos pontos, que também não expiram.
+ */
+function EscadaDeIndicacao({
+  beneficios,
+  validadas,
+}: {
+  beneficios: { nivel: number; texto: string; alcancado: boolean }[];
+  validadas: number;
+}) {
+  if (beneficios.length === 0) return null;
+
+  return (
+    <section className="c-secao">
+      <h2 className="c-secao-titulo">Quanto mais você indica, mais você ganha</h2>
+      <p className="c-contagem">
+        {validadas === 0
+          ? "Você ainda não tem nenhuma indicação confirmada."
+          : `Você já tem ${validadas} ${validadas === 1 ? "indicação confirmada" : "indicações confirmadas"}.`}{" "}
+        As indicações não zeram no fim do mês: vão somando ao longo do tempo, como os pontos.
+      </p>
+
+      <div className="c-recompensas">
+        {beneficios.map((b) => (
+          <div key={b.nivel} className={`c-recompensa ${b.alcancado ? "alcancada" : ""}`}>
+            <span className="c-recompensa-pontos">{b.nivel}</span>
+            <span className="c-recompensa-texto">
+              <strong>
+                {b.nivel} {b.nivel === 1 ? "indicação" : "indicações"}
+              </strong>
+              <span>{b.texto}</span>
+            </span>
+            {b.alcancado && <span className="c-selo melhor">Alcançado</span>}
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 

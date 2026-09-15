@@ -1,4 +1,5 @@
 import type {
+  AcaoAdmin,
   Alimento,
   CategoriaComerFora,
   Configuracoes,
@@ -13,6 +14,7 @@ import type {
   Paciente,
   PainelDoDesafio,
   Plano,
+  ResumoIndicacao,
 } from "@/central/types";
 import { semanaDoDesafio, situacaoDoDesafio, totalDeSemanas } from "@/central/utils/desafio";
 import { exigirSupabase } from "@/central/supabase/cliente";
@@ -451,6 +453,35 @@ export const repositorioSupabase: Repositorio = {
     erro("recusar", error);
   },
 
+  async acoesDoDesafio(desafioId: string) {
+    const sb = exigirSupabase();
+    const { data, error } = await sb
+      .from("desafio_acoes")
+      .select("id, chave, nome, pontos, periodicidade, max_por_semana, ativo")
+      .eq("desafio_id", desafioId)
+      .order("ordem", { ascending: true });
+    erro("listar as ações do desafio", error);
+    return (data ?? []).map((l: Linha) => ({
+      id: texto(l.id),
+      chave: texto(l.chave),
+      nome: texto(l.nome),
+      pontos: numero(l.pontos),
+      periodicidade: (l.periodicidade as AcaoAdmin["periodicidade"]) ?? "semanal",
+      maxPorSemana: l.max_por_semana === undefined ? 1 : numero(l.max_por_semana),
+      ativo: l.ativo !== false,
+    }));
+  },
+
+  async concederAcao(pacienteId: string, acaoId: string, semana?: number | null) {
+    const sb = exigirSupabase();
+    const { error } = await sb.rpc("conceder_acao", {
+      p_paciente: pacienteId,
+      p_acao: acaoId,
+      p_semana: semana ?? null,
+    });
+    erro("lançar a ação", error);
+  },
+
   async ajustarPontos(pacienteId: string, pontos: number, motivo: string, desafioId?: string | null) {
     const sb = exigirSupabase();
     const { error } = await sb.rpc("ajustar_pontos", {
@@ -478,6 +509,13 @@ export const repositorioSupabase: Repositorio = {
       status: (l.status as IndicacaoPendente["status"]) ?? "registrada",
       criadoEm: texto(l.criado_em),
     }));
+  },
+
+  async resumoIndicacoes() {
+    const sb = exigirSupabase();
+    const { data, error } = await sb.rpc("resumo_indicacoes");
+    erro("carregar o resumo de indicações", error);
+    return (data ?? []) as ResumoIndicacao[];
   },
 
   async validarIndicacao(indicacaoId: string) {

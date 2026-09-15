@@ -1,4 +1,5 @@
 import type {
+  AcaoAdmin,
   Alimento,
   CategoriaComerFora,
   Configuracoes,
@@ -16,6 +17,7 @@ import type {
   Paciente,
   PainelDoDesafio,
   Plano,
+  ResumoIndicacao,
   Unidade,
 } from "@/central/types";
 import { MODO_DEMONSTRACAO } from "@/central/supabase/cliente";
@@ -101,8 +103,17 @@ export interface Repositorio {
   enviosPendentes(desafioId: string): Promise<EnvioPendente[]>;
   aprovarEnvio(envioId: string): Promise<void>;
   recusarEnvio(envioId: string, motivo?: string | null): Promise<void>;
+  /** As ações do desafio, para ela escolher qual lançar por alguém. */
+  acoesDoDesafio(desafioId: string): Promise<AcaoAdmin[]>;
+  /**
+   * Lançar a ação por uma paciente que fez e esqueceu de marcar. Não é ponto
+   * solto: vira um envio aprovado, com o histórico de sempre.
+   */
+  concederAcao(pacienteId: string, acaoId: string, semana?: number | null): Promise<void>;
   ajustarPontos(pacienteId: string, pontos: number, motivo: string, desafioId?: string | null): Promise<void>;
   listarIndicacoes(): Promise<IndicacaoPendente[]>;
+  /** Quantas indicações cada paciente já fez, somando desde sempre. */
+  resumoIndicacoes(): Promise<ResumoIndicacao[]>;
   validarIndicacao(indicacaoId: string): Promise<void>;
   recusarIndicacao(indicacaoId: string, motivo?: string | null): Promise<void>;
 }

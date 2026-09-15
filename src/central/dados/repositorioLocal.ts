@@ -1,4 +1,5 @@
 import type {
+  AcaoAdmin,
   AcaoDoDesafio,
   Alimento,
   CategoriaComerFora,
@@ -15,6 +16,7 @@ import type {
   NovoPaciente,
   Paciente,
   Plano,
+  ResumoIndicacao,
 } from "@/central/types";
 import {
   periodoDaSemana as _periodoDaSemana,
@@ -267,28 +269,29 @@ export const repositorioLocal: Repositorio = {
     const semana = semanaDoDesafio(desafio.dataInicio, desafio.dataFim) ?? 1;
 
     const acoes: AcaoDoDesafio[] = ACOES_DEMO.map((a) => {
-      const meu = envios.find(
+      const meus = envios.filter(
         (e) => e.acaoId === a.id && (a.periodicidade !== "semanal" || e.semana === semana),
       );
+      const valendo = meus.filter((e) => e.status !== "recusado").length;
       return {
         ...a,
-        envio: meu
-          ? {
-              id: meu.id,
-              status: meu.status,
-              semana: meu.semana,
-              observacao: meu.observacao,
-              motivoRecusa: null,
-              enviadoEm: meu.enviadoEm,
-              pontosConcedidos: meu.status === "aprovado" ? a.pontos : 0,
-            }
-          : null,
+        envios: meus.map((meu) => ({
+          id: meu.id,
+          status: meu.status,
+          semana: meu.semana,
+          observacao: meu.observacao,
+          motivoRecusa: null,
+          enviadoEm: meu.enviadoEm,
+          pontosConcedidos: meu.status === "aprovado" ? a.pontos : 0,
+        })),
+        podeMarcar:
+          a.periodicidade === "semanal" ? valendo < a.maxPorSemana : valendo === 0,
         aprovadas: envios.filter((e) => e.acaoId === a.id && e.status === "aprovado").length,
       };
     });
 
     const pontosNoMes = acoes.reduce(
-      (soma, a) => soma + (a.envio?.status === "aprovado" ? a.pontos : 0),
+      (soma, a) => soma + a.envios.filter((e) => e.status === "aprovado").length * a.pontos,
       0,
     );
     // Um saldo antigo de exemplo, para a tela mostrar a diferença entre o
@@ -304,6 +307,7 @@ export const repositorioLocal: Repositorio = {
     ].sort((a, b) => b.pontos - a.pontos)
       .map((l, i) => ({ ...l, posicao: i + 1 }));
 
+    const validadas = guardaIndicacoes.ler().filter((i) => i.status === "validada").length;
     const minha = ranking.find((l) => l.souEu)!;
     const acima = ranking.filter((l) => l.pontos > pontosNoMes).map((l) => l.pontos);
 
@@ -326,6 +330,11 @@ export const repositorioLocal: Repositorio = {
           criadoEm: e.enviadoEm,
         })),
       indicacoes: guardaIndicacoes.ler(),
+      indicacoesValidadas: validadas,
+      beneficiosIndicacao: BENEFICIOS_DEMO.map((b) => ({
+        ...b,
+        alcancado: validadas >= b.nivel,
+      })),
       recompensas: RECOMPENSAS_DEMO.map((r) => ({ ...r, alcancada: saldoAcumulado >= r.pontos })),
     } satisfies MeuDesafio;
   },
@@ -338,8 +347,11 @@ export const repositorioLocal: Repositorio = {
       ? semanaDoDesafio(desafio.dataInicio, desafio.dataFim)
       : null;
     const envios = guardaEnvios.ler();
-    if (envios.some((e) => e.acaoId === acaoId && e.semana === semana && e.status !== "recusado")) {
-      throw new Error("Você já enviou esta ação.");
+    const jaFeitos = envios.filter(
+      (e) => e.acaoId === acaoId && e.semana === semana && e.status !== "recusado",
+    ).length;
+    if (jaFeitos >= (acao.periodicidade === "semanal" ? acao.maxPorSemana : 1)) {
+      throw new Error("Você já marcou esta ação o número de vezes desta semana.");
     }
     guardaEnvios.escrever([
       ...envios,
@@ -412,6 +424,22 @@ export const repositorioLocal: Repositorio = {
     /* idem */
   },
 
+  async acoesDoDesafio(): Promise<AcaoAdmin[]> {
+    return ACOES_DEMO.map((a) => ({
+      id: a.id,
+      chave: a.chave,
+      nome: a.nome,
+      pontos: a.pontos,
+      periodicidade: a.periodicidade,
+      maxPorSemana: a.maxPorSemana,
+      ativo: true,
+    }));
+  },
+
+  async concederAcao() {
+    throw new Error("Lançar ação por uma paciente precisa do banco. Configure o Supabase.");
+  },
+
   async ajustarPontos() {
     throw new Error("Ajustar pontos precisa do banco. Configure o Supabase.");
   },
@@ -428,10 +456,23 @@ export const repositorioLocal: Repositorio = {
     }));
   },
 
+  async resumoIndicacoes(): Promise<ResumoIndicacao[]> {
+    const lista = guardaIndicacoes.ler();
+    if (lista.length === 0) return [];
+    return [
+      {
+        pacienteId: "demo",
+        nome: "Demonstração",
+        validadas: lista.filter((i) => i.status === "validada").length,
+        emAndamento: lista.filter((i) => i.status === "registrada" || i.status === "iniciou").length,
+      },
+    ];
+  },
+
   async validarIndicacao(indicacaoId: string) {
     guardaIndicacoes.escrever(
       guardaIndicacoes.ler().map((i) =>
-        i.id === indicacaoId ? { ...i, status: "validada" as const, pontos: 50 } : i,
+        i.id === indicacaoId ? { ...i, status: "validada" as const, pontos: 100 } : i,
       ),
     );
   },
@@ -497,19 +538,31 @@ function desafioDemoAdmin(): DesafioAdmin {
   return { ...desafioDemo(), status: "ativo" };
 }
 
-/** As mesmas cinco ações e pontuações do banco (0011_desafio_dados.sql). */
+/** As mesmas cinco ações e pontuações do banco (0011 e 0013). */
 const ACOES_DEMO = [
   { id: "a-questionario", chave: "questionario", nome: "Respondi meu questionário semanal",
-    descricao: null, pontos: 5, periodicidade: "semanal" as const },
+    descricao: "Uma vez por semana.", pontos: 5, periodicidade: "semanal" as const,
+    maxPorSemana: 1 },
   { id: "a-metas", chave: "metas", nome: "Cumpri minhas metas da semana",
-    descricao: null, pontos: 5, periodicidade: "semanal" as const },
+    descricao: "Uma vez por semana.", pontos: 5, periodicidade: "semanal" as const,
+    maxPorSemana: 1 },
   { id: "a-diario", chave: "diario", nome: "Enviei meu diário alimentar",
-    descricao: null, pontos: 5, periodicidade: "semanal" as const },
+    descricao: "Duas vezes por semana.", pontos: 5, periodicidade: "semanal" as const,
+    maxPorSemana: 2 },
   { id: "a-redes", chave: "redes", nome: "Compartilhei minha evolução e te marquei",
-    descricao: "Uma vez por semana.", pontos: 10, periodicidade: "semanal" as const },
+    descricao: "Uma vez por semana.", pontos: 10, periodicidade: "semanal" as const,
+    maxPorSemana: 1 },
   { id: "a-indicacao", chave: "indicacao", nome: "Indiquei uma amiga",
-    descricao: "Os pontos entram quando ela começa o acompanhamento.", pontos: 50,
-    periodicidade: "evento" as const },
+    descricao: "Os pontos entram quando ela começa o acompanhamento.", pontos: 100,
+    periodicidade: "evento" as const, maxPorSemana: 1 },
+];
+
+/** A escada de benefícios da indicação (0013_desafio_ajustes.sql). */
+const BENEFICIOS_DEMO = [
+  { nivel: 1, texto: "100 pontos" },
+  { nivel: 2, texto: "100 pontos + 20% de desconto na renovação do plano" },
+  { nivel: 3, texto: "100 pontos + 1 consulta bônus" },
+  { nivel: 4, texto: "100 pontos + 1 consulta bônus + 1 kit completo das marcas parceiras" },
 ];
 
 const RECOMPENSAS_DEMO = [
