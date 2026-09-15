@@ -14,7 +14,7 @@
 -- dados iniciais são inseridos com "on conflict do nothing", então nada que
 -- você já tiver cadastrado é apagado ou duplicado.
 --
--- Contém: 0001_esquema.sql, 0002_funcoes.sql, 0003_rls.sql, 0004_dados_iniciais.sql, 0005_permissoes.sql
+-- Contém: 0001_esquema.sql, 0002_funcoes.sql, 0003_rls.sql, 0004_dados_iniciais.sql, 0005_permissoes.sql, 0006_desafio.sql, 0007_desafio_funcoes.sql, 0008_desafio_rls.sql, 0009_desafio_tela.sql, 0010_desafio_fechaduras.sql, 0011_desafio_dados.sql
 -- =============================================================================
 
 
@@ -1165,3 +1165,1600 @@ to authenticated;
 grant select on historico_admin, convites to authenticated;
 
 grant usage, select on all sequences in schema public to authenticated;
+
+
+-- ###########################################################################
+-- 0006_desafio.sql
+-- ###########################################################################
+
+-- =============================================================================
+-- CENTRAL DO PACIENTE — 0006: Desafio do mês (Ponto de Virada)
+--
+-- A regra de pontuação mora AQUI, não na tela. O frontend não soma nada e não
+-- escreve uma linha de ponto: ele mostra o que estas funções devolvem.
+--
+-- O caminho é sempre o mesmo:
+--   paciente marca "eu fiz"  →  envio com status 'enviado', zero pontos
+--   nutricionista aprova     →  função grava o lançamento no ledger
+--   saldo e ranking          →  derivados do ledger, nunca de um total solto
+--
+-- Nada aqui altera tabela existente. Paciente, plano, convite, alimento e
+-- conteúdo continuam exatamente como estavam.
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- Desafios
+-- -----------------------------------------------------------------------------
+
+create table if not exists desafios (
+  id uuid primary key default gen_random_uuid(),
+  nome text not null,
+  descricao text,
+  -- A frase que abre a tela. Fica no banco para ela trocar sem publicar de novo.
+  lema text,
+  data_inicio date not null,
+  data_fim date not null,
+  status text not null default 'rascunho'
+    check (status in ('rascunho', 'ativo', 'encerrado')),
+  capa_url text,
+  regras text,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  constraint desafio_periodo_coerente check (data_fim >= data_inicio)
+);
+
+create index if not exists desafios_status_idx on desafios (status, data_inicio desc);
+
+-- Não pode haver dois desafios cobrindo o mesmo dia: o card da Home e o
+-- ranking precisam saber qual é o do momento sem adivinhar.
+--
+-- A trava é por PERÍODO, não por status. Um índice sobre `status = 'ativo'`
+-- pareceria equivalente e não é: ele impediria ela de deixar o desafio de
+-- outubro pronto enquanto o de setembro ainda está marcado como ativo — e
+-- justamente preparar o mês seguinte com antecedência é o uso normal.
+create or replace function desafio_sem_sobreposicao()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.status = 'rascunho' then
+    return new;
+  end if;
+  if exists (
+    select 1 from desafios d
+    where d.id <> new.id
+      and d.status <> 'rascunho'
+      and daterange(d.data_inicio, d.data_fim, '[]')
+          && daterange(new.data_inicio, new.data_fim, '[]')
+  ) then
+    raise exception 'Já existe um desafio cobrindo estas datas.' using errcode = '23505';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists desafio_sem_sobreposicao on desafios;
+create trigger desafio_sem_sobreposicao
+before insert or update on desafios
+for each row execute function desafio_sem_sobreposicao();
+
+-- -----------------------------------------------------------------------------
+-- Ações que pontuam
+--
+-- Cadastradas como dado, não como enum: mudar a pontuação, desligar uma ação
+-- ou criar outra é editar linha, não mexer em código (§23 do briefing dela).
+-- -----------------------------------------------------------------------------
+
+create table if not exists desafio_acoes (
+  id uuid primary key default gen_random_uuid(),
+  desafio_id uuid not null references desafios (id) on delete cascade,
+  -- Chave estável para a tela saber que ícone/texto usar sem depender do nome.
+  chave text not null,
+  nome text not null,
+  descricao text,
+  pontos integer not null check (pontos > 0),
+  -- 'semanal'  = uma vez por semana do desafio
+  -- 'desafio'  = uma vez no desafio inteiro
+  -- 'evento'   = quantas vezes acontecer (limitado por max_ocorrencias)
+  periodicidade text not null default 'semanal'
+    check (periodicidade in ('semanal', 'desafio', 'evento')),
+  exige_validacao boolean not null default true,
+  -- Nulo = sem teto. Vale para 'evento'.
+  max_ocorrencias integer check (max_ocorrencias is null or max_ocorrencias > 0),
+  ativo boolean not null default true,
+  ordem integer not null default 0,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  unique (desafio_id, chave)
+);
+
+-- -----------------------------------------------------------------------------
+-- Participação
+-- -----------------------------------------------------------------------------
+
+create table if not exists desafio_participantes (
+  id uuid primary key default gen_random_uuid(),
+  desafio_id uuid not null references desafios (id) on delete cascade,
+  paciente_id uuid not null references pacientes (id) on delete cascade,
+  entrou_em timestamptz not null default now(),
+  unique (desafio_id, paciente_id)
+);
+
+-- -----------------------------------------------------------------------------
+-- Envios: "eu fiz isso"
+--
+-- `pontos_concedidos` existe só como registro do que foi concedido na
+-- aprovação. Quem manda no saldo é o ledger.
+-- -----------------------------------------------------------------------------
+
+create table if not exists desafio_envios (
+  id uuid primary key default gen_random_uuid(),
+  desafio_id uuid not null references desafios (id) on delete cascade,
+  acao_id uuid not null references desafio_acoes (id) on delete cascade,
+  paciente_id uuid not null references pacientes (id) on delete cascade,
+  -- Semana do desafio (1, 2, 3...). Nulo para ação que não é semanal.
+  semana integer,
+  status text not null default 'enviado'
+    check (status in ('enviado', 'aprovado', 'recusado')),
+  observacao text,
+  enviado_em timestamptz not null default now(),
+  revisado_em timestamptz,
+  revisado_por uuid references perfis (id) on delete set null,
+  motivo_recusa text,
+  pontos_concedidos integer not null default 0
+);
+
+create index if not exists envios_pendentes_idx
+  on desafio_envios (desafio_id, status, enviado_em);
+create index if not exists envios_paciente_idx
+  on desafio_envios (paciente_id, desafio_id);
+
+-- A trava de duplicidade mora no banco, não na tela (§56).
+-- Recusado fica de fora: se ela recusou, a paciente pode mandar de novo.
+create unique index if not exists envios_sem_duplicata_semanal_idx
+  on desafio_envios (desafio_id, acao_id, paciente_id, semana)
+  where status <> 'recusado' and semana is not null;
+
+create unique index if not exists envios_sem_duplicata_unica_idx
+  on desafio_envios (desafio_id, acao_id, paciente_id)
+  where status <> 'recusado' and semana is null;
+
+-- -----------------------------------------------------------------------------
+-- Ledger de pontos — a fonte única (§42)
+--
+-- Nunca se apaga uma linha daqui. Correção é lançamento novo, inclusive
+-- negativo, com motivo. O saldo é a soma; o ranking é a soma filtrada pelo
+-- desafio. Não existe "total" guardado em coluna para desencontrar do
+-- histórico.
+-- -----------------------------------------------------------------------------
+
+create table if not exists pontos_lancamentos (
+  id uuid primary key default gen_random_uuid(),
+  paciente_id uuid not null references pacientes (id) on delete cascade,
+  -- Nulo quando o ponto não veio de desafio nenhum (ajuste avulso).
+  desafio_id uuid references desafios (id) on delete set null,
+  acao_id uuid references desafio_acoes (id) on delete set null,
+  envio_id uuid references desafio_envios (id) on delete set null,
+  indicacao_id uuid,
+  pontos integer not null,
+  tipo text not null
+    check (tipo in ('acao', 'indicacao', 'ajuste', 'resgate')),
+  descricao text not null,
+  criado_em timestamptz not null default now(),
+  criado_por uuid references perfis (id) on delete set null
+);
+
+create index if not exists lancamentos_paciente_idx
+  on pontos_lancamentos (paciente_id, criado_em desc);
+create index if not exists lancamentos_desafio_idx
+  on pontos_lancamentos (desafio_id, paciente_id);
+
+-- Um envio aprovado gera um lançamento, e só um.
+create unique index if not exists lancamentos_um_por_envio_idx
+  on pontos_lancamentos (envio_id) where envio_id is not null;
+
+-- -----------------------------------------------------------------------------
+-- Indicações
+--
+-- Os 50 pontos não saem porque alguém disse que indicou: saem quando a
+-- indicada vira paciente de verdade e a nutricionista confirma (§9, §26).
+-- -----------------------------------------------------------------------------
+
+create table if not exists indicacoes (
+  id uuid primary key default gen_random_uuid(),
+  desafio_id uuid references desafios (id) on delete set null,
+  paciente_indicadora_id uuid not null references pacientes (id) on delete cascade,
+  nome_indicada text not null,
+  email_indicada citext,
+  telefone_indicada text,
+  -- Preenchido quando a indicada é encontrada no cadastro de pacientes.
+  paciente_indicada_id uuid references pacientes (id) on delete set null,
+  status text not null default 'registrada'
+    check (status in ('registrada', 'iniciou', 'validada', 'recusada')),
+  observacao text,
+  pontos_concedidos integer not null default 0,
+  criado_em timestamptz not null default now(),
+  validado_em timestamptz,
+  validado_por uuid references perfis (id) on delete set null
+);
+
+create index if not exists indicacoes_indicadora_idx
+  on indicacoes (paciente_indicadora_id, criado_em desc);
+create index if not exists indicacoes_status_idx on indicacoes (status);
+
+alter table pontos_lancamentos
+  drop constraint if exists pontos_lancamentos_indicacao_fk;
+alter table pontos_lancamentos
+  add constraint pontos_lancamentos_indicacao_fk
+  foreign key (indicacao_id) references indicacoes (id) on delete set null;
+
+-- Uma indicação validada gera um lançamento, e só um.
+create unique index if not exists lancamentos_um_por_indicacao_idx
+  on pontos_lancamentos (indicacao_id) where indicacao_id is not null;
+
+-- -----------------------------------------------------------------------------
+-- Recompensas do Ponto de Virada (§47)
+--
+-- Em tabela, e não em código, porque são as regras do programa dela — mas os
+-- valores só mudam com a autorização dela.
+-- -----------------------------------------------------------------------------
+
+create table if not exists recompensas (
+  id text primary key,
+  pontos integer not null check (pontos > 0),
+  nome text not null,
+  descricao text,
+  ordem integer not null default 0,
+  ativo boolean not null default true
+);
+
+-- Mesmo gatilho de `atualizado_em` das tabelas antigas, pelo mesmo caminho.
+do $$
+declare t text;
+begin
+  foreach t in array array['desafios', 'desafio_acoes'] loop
+    execute format('drop trigger if exists tocar_atualizado on %I', t);
+    execute format(
+      'create trigger tocar_atualizado before update on %I for each row execute function tocar_atualizado_em()',
+      t
+    );
+  end loop;
+end;
+$$;
+
+
+-- ###########################################################################
+-- 0007_desafio_funcoes.sql
+-- ###########################################################################
+
+-- =============================================================================
+-- CENTRAL DO PACIENTE — 0007: as regras do desafio
+--
+-- REGRA MAIS IMPORTANTE (dela, e o motivo deste arquivo existir):
+-- o sistema NÃO confia no checkbox da paciente para dar pontos.
+--
+-- A paciente não tem permissão de escrever em `desafio_envios` nem em
+-- `pontos_lancamentos` — ver 0008. O único caminho é `enviar_acao()`, que
+-- grava status 'enviado' e zero pontos, sempre. Quem transforma isso em ponto
+-- é `aprovar_envio()`, e essa só roda para admin.
+--
+-- Mesmo com o app aberto no console do navegador, a paciente não consegue
+-- somar um ponto sequer para si.
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- Semanas do desafio (§12)
+--
+-- Calculadas a partir do período, nunca escritas à mão. Um desafio que começa
+-- 01/09 e termina 30/09 tem 5 semanas; a última tem 2 dias, e tudo bem.
+-- -----------------------------------------------------------------------------
+
+create or replace function semana_do_desafio(p_desafio uuid, p_data date default null)
+returns integer
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select case
+    when d.id is null then null
+    when coalesce(p_data, hoje_sp()) < d.data_inicio then null
+    when coalesce(p_data, hoje_sp()) > d.data_fim then null
+    else floor((coalesce(p_data, hoje_sp()) - d.data_inicio) / 7)::int + 1
+  end
+  from desafios d
+  where d.id = p_desafio;
+$$;
+
+/** Quantas semanas o desafio tem no total. */
+create or replace function total_de_semanas(p_desafio uuid)
+returns integer
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select floor((d.data_fim - d.data_inicio) / 7)::int + 1
+  from desafios d where d.id = p_desafio;
+$$;
+
+/** Início e fim de uma semana do desafio, para a tela mostrar "08/09 — 14/09". */
+create or replace function periodo_da_semana(p_desafio uuid, p_semana integer)
+returns table (inicio date, fim date)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select
+    d.data_inicio + ((p_semana - 1) * 7),
+    least(d.data_inicio + ((p_semana - 1) * 7) + 6, d.data_fim)
+  from desafios d where d.id = p_desafio;
+$$;
+
+-- -----------------------------------------------------------------------------
+-- Encerramento automático (§36)
+--
+-- Sem cron: a data decide. Qualquer leitura já vê o desafio como encerrado
+-- depois do último dia, do mesmo jeito que o acesso da paciente expira sozinho.
+-- -----------------------------------------------------------------------------
+
+create or replace function situacao_desafio(p_status text, p_inicio date, p_fim date)
+returns text
+language sql
+immutable
+as $$
+  select case
+    when p_status = 'rascunho' then 'rascunho'
+    when p_status = 'encerrado' then 'encerrado'
+    when hoje_sp() > p_fim then 'encerrado'
+    when hoje_sp() < p_inicio then 'agendado'
+    else 'ativo'
+  end;
+$$;
+
+/** O desafio que está valendo hoje. Nulo quando não há nenhum. */
+create or replace function desafio_atual()
+returns uuid
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select d.id from desafios d
+  where d.status = 'ativo'
+    and hoje_sp() between d.data_inicio and d.data_fim
+  order by d.data_inicio desc
+  limit 1;
+$$;
+
+-- -----------------------------------------------------------------------------
+-- O paciente de quem está logado
+-- -----------------------------------------------------------------------------
+
+create or replace function meu_paciente_id()
+returns uuid
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select id from pacientes where perfil_id = auth.uid() limit 1;
+$$;
+
+-- -----------------------------------------------------------------------------
+-- Saldo e ranking — derivados do ledger, nunca de coluna guardada (§42)
+-- -----------------------------------------------------------------------------
+
+/** Saldo oficial do Ponto de Virada: soma tudo, de todos os desafios. Não expira. */
+create or replace function saldo_de_pontos(p_paciente uuid)
+returns integer
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(sum(pontos), 0)::int
+  from pontos_lancamentos where paciente_id = p_paciente;
+$$;
+
+/** Pontos de um desafio só — é o que o ranking mensal usa (§15). */
+create or replace function pontos_no_desafio(p_paciente uuid, p_desafio uuid)
+returns integer
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(sum(pontos), 0)::int
+  from pontos_lancamentos
+  where paciente_id = p_paciente and desafio_id = p_desafio;
+$$;
+
+/**
+ * Nome como o ranking mostra. A configuração `ranking_nome` decide entre
+ * 'completo', 'primeiro' e 'primeiro_inicial' (o padrão).
+ *
+ * Existe porque o ranking é a única tela em que uma paciente vê outra: a
+ * política de `pacientes` continua fechada, e o que sai daqui é só o nome
+ * tratado — nunca e-mail, plano, data ou qualquer dado de saúde (§19).
+ */
+create or replace function nome_para_ranking(p_nome text)
+returns text
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_modo text;
+  v_partes text[];
+begin
+  select coalesce(valor #>> '{}', 'primeiro_inicial') into v_modo
+  from configuracoes where chave = 'ranking_nome';
+
+  if v_modo = 'completo' then
+    return p_nome;
+  end if;
+
+  v_partes := regexp_split_to_array(trim(p_nome), '\s+');
+  if array_length(v_partes, 1) is null then
+    return p_nome;
+  end if;
+
+  if v_modo = 'primeiro' or array_length(v_partes, 1) = 1 then
+    return v_partes[1];
+  end if;
+
+  return v_partes[1] || ' ' || upper(left(v_partes[array_length(v_partes, 1)], 1)) || '.';
+end;
+$$;
+
+/**
+ * Ranking de um desafio.
+ *
+ * Empate (§31): quem empata divide a posição — 1º, 1º, 3º. É a regra de
+ * competição comum, e não obriga a inventar um critério de desempate que
+ * puniria alguém por ter pontuado mais tarde.
+ *
+ * Só entra ponto já lançado, ou seja, já aprovado (§16).
+ */
+create or replace function ranking_do_desafio(p_desafio uuid)
+returns table (posicao integer, paciente_id uuid, nome text, pontos integer, sou_eu boolean)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  -- Entra no ranking quem participou OU quem tem ponto no desafio.
+  --
+  -- A segunda metade não é redundância: uma paciente que só indicou uma amiga,
+  -- ou que recebeu um ajuste manual, tem pontos do mês sem ter marcado ação
+  -- nenhuma. Montar o ranking só pela lista de participantes a deixaria de
+  -- fora com pontos e tudo — foi o que os testes pegaram.
+  with envolvidas as (
+    select paciente_id from desafio_participantes where desafio_id = p_desafio
+    union
+    select paciente_id from pontos_lancamentos where desafio_id = p_desafio
+  ),
+  somas as (
+    select p.id, p.nome, coalesce(sum(l.pontos), 0)::int as pontos
+    from envolvidas e
+    join pacientes p on p.id = e.paciente_id
+    left join pontos_lancamentos l
+      on l.paciente_id = p.id and l.desafio_id = p_desafio
+    group by p.id, p.nome
+  )
+  select
+    rank() over (order by pontos desc)::int,
+    s.id,
+    nome_para_ranking(s.nome),
+    s.pontos,
+    s.id = meu_paciente_id()
+  from somas s
+  order by pontos desc, s.nome;
+$$;
+
+-- -----------------------------------------------------------------------------
+-- O que a paciente envia
+-- -----------------------------------------------------------------------------
+
+/**
+ * "Eu fiz isso."
+ *
+ * Confere tudo aqui dentro, porque a tela não é autoridade: acesso válido,
+ * desafio em andamento, ação ativa, e o limite de repetição da ação. Grava
+ * sempre com status 'enviado' e zero ponto.
+ */
+create or replace function enviar_acao(p_acao uuid, p_observacao text default null)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_paciente uuid;
+  v_acao desafio_acoes;
+  v_desafio desafios;
+  v_semana integer;
+  v_id uuid;
+  v_ocorrencias integer;
+begin
+  if not tem_acesso() then
+    raise exception 'Seu acesso não está liberado.' using errcode = '42501';
+  end if;
+
+  v_paciente := meu_paciente_id();
+  if v_paciente is null then
+    raise exception 'Não encontrei seu cadastro de paciente.' using errcode = '42501';
+  end if;
+
+  select * into v_acao from desafio_acoes where id = p_acao and ativo;
+  if not found then
+    raise exception 'Esta ação não está disponível.' using errcode = '22023';
+  end if;
+
+  select * into v_desafio from desafios where id = v_acao.desafio_id;
+  if situacao_desafio(v_desafio.status, v_desafio.data_inicio, v_desafio.data_fim) <> 'ativo' then
+    raise exception 'Este desafio não está em andamento.' using errcode = '22023';
+  end if;
+
+  -- Semana só existe para ação semanal; nas demais fica nula de propósito, e é
+  -- o índice único parcial que garante a unicidade certa para cada caso.
+  if v_acao.periodicidade = 'semanal' then
+    v_semana := semana_do_desafio(v_desafio.id);
+    if v_semana is null then
+      raise exception 'Hoje está fora do período do desafio.' using errcode = '22023';
+    end if;
+  else
+    v_semana := null;
+  end if;
+
+  if v_acao.periodicidade = 'evento' and v_acao.max_ocorrencias is not null then
+    select count(*) into v_ocorrencias
+    from desafio_envios
+    where acao_id = v_acao.id and paciente_id = v_paciente and status <> 'recusado';
+    if v_ocorrencias >= v_acao.max_ocorrencias then
+      raise exception 'Você já usou todas as vezes desta ação.' using errcode = '22023';
+    end if;
+  end if;
+
+  -- Entra no desafio na primeira ação, sem tela de inscrição.
+  insert into desafio_participantes (desafio_id, paciente_id)
+  values (v_desafio.id, v_paciente)
+  on conflict (desafio_id, paciente_id) do nothing;
+
+  insert into desafio_envios (desafio_id, acao_id, paciente_id, semana, observacao)
+  values (v_desafio.id, v_acao.id, v_paciente, v_semana, nullif(trim(p_observacao), ''))
+  returning id into v_id;
+
+  return v_id;
+exception
+  when unique_violation then
+    raise exception 'Você já enviou esta ação.' using errcode = '23505';
+end;
+$$;
+
+/** Desfazer o próprio envio, enquanto ainda não foi conferido. */
+create or replace function cancelar_envio(p_envio uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare v_paciente uuid;
+begin
+  v_paciente := meu_paciente_id();
+  delete from desafio_envios
+  where id = p_envio and paciente_id = v_paciente and status = 'enviado';
+  if not found then
+    raise exception 'Este envio não pode mais ser desfeito.' using errcode = '22023';
+  end if;
+end;
+$$;
+
+-- -----------------------------------------------------------------------------
+-- O que só a nutricionista faz
+-- -----------------------------------------------------------------------------
+
+/** Aprovar: é aqui, e só aqui, que um ponto de ação nasce. */
+create or replace function aprovar_envio(p_envio uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_envio desafio_envios;
+  v_acao desafio_acoes;
+begin
+  if not e_admin() then
+    raise exception 'Só a nutricionista aprova.' using errcode = '42501';
+  end if;
+
+  select * into v_envio from desafio_envios where id = p_envio for update;
+  if not found then
+    raise exception 'Envio não encontrado.' using errcode = '22023';
+  end if;
+  if v_envio.status = 'aprovado' then
+    return; -- já aprovado: não gera ponto de novo
+  end if;
+
+  select * into v_acao from desafio_acoes where id = v_envio.acao_id;
+
+  update desafio_envios
+     set status = 'aprovado',
+         revisado_em = now(),
+         revisado_por = auth.uid(),
+         motivo_recusa = null,
+         pontos_concedidos = v_acao.pontos
+   where id = p_envio;
+
+  insert into pontos_lancamentos
+    (paciente_id, desafio_id, acao_id, envio_id, pontos, tipo, descricao, criado_por)
+  values
+    (v_envio.paciente_id, v_envio.desafio_id, v_acao.id, v_envio.id, v_acao.pontos,
+     'acao',
+     v_acao.nome || coalesce(' · semana ' || v_envio.semana, ''),
+     auth.uid());
+end;
+$$;
+
+/** Recusar: não gera ponto, e a paciente vê o motivo. */
+create or replace function recusar_envio(p_envio uuid, p_motivo text default null)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not e_admin() then
+    raise exception 'Só a nutricionista recusa.' using errcode = '42501';
+  end if;
+
+  -- Se já havia sido aprovado, o ponto sai por estorno — o lançamento
+  -- original fica no histórico. Nada se apaga do ledger (§30).
+  insert into pontos_lancamentos
+    (paciente_id, desafio_id, acao_id, pontos, tipo, descricao, criado_por)
+  select l.paciente_id, l.desafio_id, l.acao_id, -l.pontos, 'ajuste',
+         'Estorno: ' || l.descricao, auth.uid()
+  from pontos_lancamentos l
+  where l.envio_id = p_envio;
+
+  update desafio_envios
+     set status = 'recusado',
+         revisado_em = now(),
+         revisado_por = auth.uid(),
+         motivo_recusa = nullif(trim(p_motivo), ''),
+         pontos_concedidos = 0
+   where id = p_envio;
+end;
+$$;
+
+/** Correção manual, sempre com motivo e sempre virando histórico (§30). */
+create or replace function ajustar_pontos(
+  p_paciente uuid,
+  p_pontos integer,
+  p_motivo text,
+  p_desafio uuid default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not e_admin() then
+    raise exception 'Só a nutricionista ajusta pontos.' using errcode = '42501';
+  end if;
+  if p_pontos = 0 then
+    raise exception 'Informe um valor diferente de zero.' using errcode = '22023';
+  end if;
+  if coalesce(trim(p_motivo), '') = '' then
+    raise exception 'Escreva o motivo do ajuste.' using errcode = '22023';
+  end if;
+
+  insert into pontos_lancamentos
+    (paciente_id, desafio_id, pontos, tipo, descricao, criado_por)
+  values (p_paciente, p_desafio, p_pontos, 'ajuste', trim(p_motivo), auth.uid());
+end;
+$$;
+
+-- -----------------------------------------------------------------------------
+-- Indicações
+-- -----------------------------------------------------------------------------
+
+/** A paciente registra que indicou alguém. Isso não vale ponto nenhum ainda. */
+create or replace function registrar_indicacao(
+  p_nome text,
+  p_email text default null,
+  p_telefone text default null
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_paciente uuid;
+  v_id uuid;
+begin
+  if not tem_acesso() then
+    raise exception 'Seu acesso não está liberado.' using errcode = '42501';
+  end if;
+  v_paciente := meu_paciente_id();
+  if coalesce(trim(p_nome), '') = '' then
+    raise exception 'Escreva o nome de quem você indicou.' using errcode = '22023';
+  end if;
+
+  -- Indicar também é participar: sem isto ela só entraria no ranking depois
+  -- de marcar alguma ação semanal.
+  if desafio_atual() is not null then
+    insert into desafio_participantes (desafio_id, paciente_id)
+    values (desafio_atual(), v_paciente)
+    on conflict (desafio_id, paciente_id) do nothing;
+  end if;
+
+  insert into indicacoes
+    (desafio_id, paciente_indicadora_id, nome_indicada, email_indicada, telefone_indicada)
+  values
+    (desafio_atual(), v_paciente, trim(p_nome), nullif(trim(p_email), ''), nullif(trim(p_telefone), ''))
+  returning id into v_id;
+
+  return v_id;
+end;
+$$;
+
+/**
+ * Validar a indicação: os 50 pontos saem aqui, e só quando ela confirma que a
+ * indicada começou o acompanhamento de verdade.
+ */
+create or replace function validar_indicacao(p_indicacao uuid, p_paciente_indicada uuid default null)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_ind indicacoes;
+  v_pontos integer;
+begin
+  if not e_admin() then
+    raise exception 'Só a nutricionista valida indicação.' using errcode = '42501';
+  end if;
+
+  select * into v_ind from indicacoes where id = p_indicacao for update;
+  if not found then
+    raise exception 'Indicação não encontrada.' using errcode = '22023';
+  end if;
+  if v_ind.status = 'validada' then
+    return;
+  end if;
+
+  select coalesce(max(pontos), 50) into v_pontos
+  from desafio_acoes
+  where chave = 'indicacao' and desafio_id = coalesce(v_ind.desafio_id, desafio_atual());
+
+  update indicacoes
+     set status = 'validada',
+         paciente_indicada_id = coalesce(p_paciente_indicada, paciente_indicada_id),
+         pontos_concedidos = v_pontos,
+         validado_em = now(),
+         validado_por = auth.uid()
+   where id = p_indicacao;
+
+  insert into pontos_lancamentos
+    (paciente_id, desafio_id, indicacao_id, pontos, tipo, descricao, criado_por)
+  values
+    (v_ind.paciente_indicadora_id, coalesce(v_ind.desafio_id, desafio_atual()), p_indicacao,
+     v_pontos, 'indicacao', 'Indicação de ' || v_ind.nome_indicada, auth.uid());
+end;
+$$;
+
+/** Recusar uma indicação: zero ponto, e o registro fica. */
+create or replace function recusar_indicacao(p_indicacao uuid, p_motivo text default null)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not e_admin() then
+    raise exception 'Só a nutricionista recusa indicação.' using errcode = '42501';
+  end if;
+  update indicacoes
+     set status = 'recusada',
+         observacao = nullif(trim(p_motivo), ''),
+         validado_em = now(),
+         validado_por = auth.uid()
+   where id = p_indicacao and status <> 'validada';
+end;
+$$;
+
+
+-- ###########################################################################
+-- 0008_desafio_rls.sql
+-- ###########################################################################
+
+-- =============================================================================
+-- CENTRAL DO PACIENTE — 0008: quem pode o quê no desafio
+--
+-- O desenho é curto de explicar: a paciente LÊ. Ela não escreve em lugar
+-- nenhum que vire ponto. Não há política de insert, update ou delete para ela
+-- em `desafio_envios`, `pontos_lancamentos` ou `indicacoes` — o caminho é
+-- sempre uma função `security definer` do 0007, que confere as regras antes.
+--
+-- Isso é o que responde ao §44 (anti-fraude): não é o app que impede, é o
+-- banco. Tirar o app do caminho não abre porta nenhuma.
+-- =============================================================================
+
+alter table desafios enable row level security;
+alter table desafio_acoes enable row level security;
+alter table desafio_participantes enable row level security;
+alter table desafio_envios enable row level security;
+alter table pontos_lancamentos enable row level security;
+alter table indicacoes enable row level security;
+alter table recompensas enable row level security;
+
+-- -----------------------------------------------------------------------------
+-- Desafios e ações: conteúdo, lido por quem tem acesso válido
+-- -----------------------------------------------------------------------------
+
+drop policy if exists desafios_leitura on desafios;
+create policy desafios_leitura on desafios for select
+  using (e_admin() or (status <> 'rascunho' and tem_acesso()));
+
+drop policy if exists desafios_admin on desafios;
+create policy desafios_admin on desafios for all
+  using (e_admin()) with check (e_admin());
+
+drop policy if exists acoes_leitura on desafio_acoes;
+create policy acoes_leitura on desafio_acoes for select
+  using (
+    e_admin() or (
+      tem_acesso()
+      and exists (select 1 from desafios d where d.id = desafio_id and d.status <> 'rascunho')
+    )
+  );
+
+drop policy if exists acoes_admin on desafio_acoes;
+create policy acoes_admin on desafio_acoes for all
+  using (e_admin()) with check (e_admin());
+
+-- -----------------------------------------------------------------------------
+-- Participação
+--
+-- A paciente lê a lista de participantes do desafio porque o ranking depende
+-- disso — mas a linha não carrega nada além do vínculo. Nome, e-mail, plano e
+-- datas continuam atrás da política de `pacientes`, que não mudou.
+-- -----------------------------------------------------------------------------
+
+drop policy if exists participantes_leitura on desafio_participantes;
+create policy participantes_leitura on desafio_participantes for select
+  using (e_admin() or tem_acesso());
+
+drop policy if exists participantes_admin on desafio_participantes;
+create policy participantes_admin on desafio_participantes for all
+  using (e_admin()) with check (e_admin());
+
+-- -----------------------------------------------------------------------------
+-- Envios: cada uma vê os seus
+-- -----------------------------------------------------------------------------
+
+drop policy if exists envios_leitura on desafio_envios;
+create policy envios_leitura on desafio_envios for select
+  using (e_admin() or paciente_id = meu_paciente_id());
+
+drop policy if exists envios_admin on desafio_envios;
+create policy envios_admin on desafio_envios for all
+  using (e_admin()) with check (e_admin());
+
+-- Repare no que NÃO existe: política de insert/update/delete para paciente.
+-- Marcar uma ação passa por `enviar_acao()`; desfazer, por `cancelar_envio()`.
+
+-- -----------------------------------------------------------------------------
+-- Ledger: leitura do próprio histórico, e nada mais
+-- -----------------------------------------------------------------------------
+
+drop policy if exists lancamentos_leitura on pontos_lancamentos;
+create policy lancamentos_leitura on pontos_lancamentos for select
+  using (e_admin() or paciente_id = meu_paciente_id());
+
+drop policy if exists lancamentos_admin on pontos_lancamentos;
+create policy lancamentos_admin on pontos_lancamentos for all
+  using (e_admin()) with check (e_admin());
+
+-- -----------------------------------------------------------------------------
+-- Indicações
+-- -----------------------------------------------------------------------------
+
+drop policy if exists indicacoes_leitura on indicacoes;
+create policy indicacoes_leitura on indicacoes for select
+  using (e_admin() or paciente_indicadora_id = meu_paciente_id());
+
+drop policy if exists indicacoes_admin on indicacoes;
+create policy indicacoes_admin on indicacoes for all
+  using (e_admin()) with check (e_admin());
+
+-- -----------------------------------------------------------------------------
+-- Recompensas: tabela de leitura para todo mundo com acesso
+-- -----------------------------------------------------------------------------
+
+drop policy if exists recompensas_leitura on recompensas;
+create policy recompensas_leitura on recompensas for select
+  using (e_admin() or (ativo and tem_acesso()));
+
+drop policy if exists recompensas_admin on recompensas;
+create policy recompensas_admin on recompensas for all
+  using (e_admin()) with check (e_admin());
+
+-- -----------------------------------------------------------------------------
+-- Permissões de execução
+-- -----------------------------------------------------------------------------
+
+grant execute on function enviar_acao(uuid, text) to authenticated;
+grant execute on function cancelar_envio(uuid) to authenticated;
+grant execute on function registrar_indicacao(text, text, text) to authenticated;
+grant execute on function ranking_do_desafio(uuid) to authenticated;
+grant execute on function saldo_de_pontos(uuid) to authenticated;
+grant execute on function pontos_no_desafio(uuid, uuid) to authenticated;
+grant execute on function semana_do_desafio(uuid, date) to authenticated;
+grant execute on function total_de_semanas(uuid) to authenticated;
+grant execute on function periodo_da_semana(uuid, integer) to authenticated;
+grant execute on function desafio_atual() to authenticated;
+grant execute on function meu_paciente_id() to authenticated;
+grant execute on function nome_para_ranking(text) to authenticated;
+grant execute on function situacao_desafio(text, date, date) to authenticated;
+
+-- Estas são de administração. O `e_admin()` dentro delas já recusa qualquer
+-- outra conta, mas não custa não oferecer.
+grant execute on function aprovar_envio(uuid) to authenticated;
+grant execute on function recusar_envio(uuid, text) to authenticated;
+grant execute on function ajustar_pontos(uuid, integer, text, uuid) to authenticated;
+grant execute on function validar_indicacao(uuid, uuid) to authenticated;
+grant execute on function recusar_indicacao(uuid, text) to authenticated;
+
+grant select on desafios, desafio_acoes, desafio_participantes,
+  desafio_envios, pontos_lancamentos, indicacoes, recompensas to authenticated;
+grant insert, update, delete on desafios, desafio_acoes, desafio_participantes,
+  desafio_envios, pontos_lancamentos, indicacoes, recompensas to authenticated;
+
+
+-- ###########################################################################
+-- 0009_desafio_tela.sql
+-- ###########################################################################
+
+-- =============================================================================
+-- CENTRAL DO PACIENTE — 0009: o que a tela do desafio lê
+--
+-- Uma função só, como `meu_acesso()`. A tela pergunta e obedece: ela não soma
+-- ponto, não decide posição e não sabe a regra. Se um dia a regra mudar, muda
+-- aqui e a tela acompanha sem saber que mudou.
+-- =============================================================================
+
+create or replace function meu_desafio()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_desafio desafios;
+  v_paciente uuid;
+  v_semana integer;
+  v_pontos_mes integer;
+  v_saldo integer;
+  v_posicao integer;
+  v_proxima integer;
+begin
+  v_paciente := meu_paciente_id();
+  select * into v_desafio from desafios where id = desafio_atual();
+
+  -- Saldo acumulado existe mesmo sem desafio no ar: ele é do programa, não do mês.
+  v_saldo := coalesce(saldo_de_pontos(v_paciente), 0);
+
+  if v_desafio.id is null then
+    return jsonb_build_object(
+      'temDesafio', false,
+      'saldoAcumulado', v_saldo,
+      'recompensas', (
+        select coalesce(jsonb_agg(jsonb_build_object(
+          'id', r.id, 'pontos', r.pontos, 'nome', r.nome, 'descricao', r.descricao,
+          'alcancada', v_saldo >= r.pontos
+        ) order by r.ordem), '[]'::jsonb)
+        from recompensas r where r.ativo
+      )
+    );
+  end if;
+
+  v_semana := semana_do_desafio(v_desafio.id);
+  v_pontos_mes := coalesce(pontos_no_desafio(v_paciente, v_desafio.id), 0);
+
+  select posicao into v_posicao
+  from ranking_do_desafio(v_desafio.id) where sou_eu;
+
+  -- Quantos pontos faltam para alcançar quem está logo acima.
+  select min(pontos) - v_pontos_mes into v_proxima
+  from ranking_do_desafio(v_desafio.id)
+  where pontos > v_pontos_mes;
+
+  return jsonb_build_object(
+    'temDesafio', true,
+    'desafio', jsonb_build_object(
+      'id', v_desafio.id,
+      'nome', v_desafio.nome,
+      'descricao', v_desafio.descricao,
+      'lema', v_desafio.lema,
+      'regras', v_desafio.regras,
+      'dataInicio', v_desafio.data_inicio,
+      'dataFim', v_desafio.data_fim,
+      'situacao', situacao_desafio(v_desafio.status, v_desafio.data_inicio, v_desafio.data_fim),
+      'semanaAtual', v_semana,
+      'totalDeSemanas', total_de_semanas(v_desafio.id)
+    ),
+    'pontosNoMes', v_pontos_mes,
+    'saldoAcumulado', v_saldo,
+    'posicao', v_posicao,
+    'pontosParaProxima', v_proxima,
+    'acoes', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'id', a.id,
+        'chave', a.chave,
+        'nome', a.nome,
+        'descricao', a.descricao,
+        'pontos', a.pontos,
+        'periodicidade', a.periodicidade,
+        -- O envio desta semana, quando a ação é semanal; o do desafio, quando não é.
+        'envio', (
+          select jsonb_build_object(
+            'id', e.id, 'status', e.status, 'semana', e.semana,
+            'observacao', e.observacao, 'motivoRecusa', e.motivo_recusa,
+            'enviadoEm', e.enviado_em, 'pontosConcedidos', e.pontos_concedidos
+          )
+          from desafio_envios e
+          where e.acao_id = a.id and e.paciente_id = v_paciente
+            and (a.periodicidade <> 'semanal' or e.semana = v_semana)
+            and e.status <> 'recusado'
+          order by e.enviado_em desc limit 1
+        ),
+        -- Quantas vezes já pontuou nesta ação, para a tela mostrar o histórico.
+        'aprovadas', (
+          select count(*) from desafio_envios e
+          where e.acao_id = a.id and e.paciente_id = v_paciente and e.status = 'aprovado'
+        )
+      ) order by a.ordem), '[]'::jsonb)
+      from desafio_acoes a
+      where a.desafio_id = v_desafio.id and a.ativo
+    ),
+    'ranking', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'posicao', r.posicao, 'nome', r.nome, 'pontos', r.pontos, 'souEu', r.sou_eu
+      ) order by r.posicao, r.nome), '[]'::jsonb)
+      from ranking_do_desafio(v_desafio.id) r
+    ),
+    'historico', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'id', l.id, 'pontos', l.pontos, 'descricao', l.descricao,
+        'tipo', l.tipo, 'criadoEm', l.criado_em
+      ) order by l.criado_em desc), '[]'::jsonb)
+      from pontos_lancamentos l
+      where l.paciente_id = v_paciente and l.desafio_id = v_desafio.id
+    ),
+    'indicacoes', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'id', i.id, 'nome', i.nome_indicada, 'status', i.status,
+        'pontos', i.pontos_concedidos, 'criadoEm', i.criado_em
+      ) order by i.criado_em desc), '[]'::jsonb)
+      from indicacoes i where i.paciente_indicadora_id = v_paciente
+    ),
+    'recompensas', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'id', r.id, 'pontos', r.pontos, 'nome', r.nome, 'descricao', r.descricao,
+        'alcancada', v_saldo >= r.pontos
+      ) order by r.ordem), '[]'::jsonb)
+      from recompensas r where r.ativo
+    )
+  );
+end;
+$$;
+
+grant execute on function meu_desafio() to authenticated;
+
+-- -----------------------------------------------------------------------------
+-- O que o painel da nutricionista lê
+-- -----------------------------------------------------------------------------
+
+create or replace function painel_do_desafio(p_desafio uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare v_desafio desafios;
+begin
+  if not e_admin() then
+    raise exception 'Só a nutricionista vê o painel.' using errcode = '42501';
+  end if;
+  select * into v_desafio from desafios where id = p_desafio;
+
+  return jsonb_build_object(
+    'elegiveis', (
+      select count(*) from pacientes p
+      where situacao_paciente(p.status, p.perfil_id, p.data_inicio, p.data_fim)
+            in ('ativo', 'proximo_do_vencimento')
+    ),
+    'participantes', (
+      select count(*) from desafio_participantes where desafio_id = p_desafio
+    ),
+    'semAcao', (
+      select count(*) from desafio_participantes dp
+      where dp.desafio_id = p_desafio
+        and not exists (
+          select 1 from desafio_envios e
+          where e.desafio_id = p_desafio and e.paciente_id = dp.paciente_id
+        )
+    ),
+    'pendentes', (
+      select count(*) from desafio_envios
+      where desafio_id = p_desafio and status = 'enviado'
+    ),
+    'indicacoesPendentes', (
+      select count(*) from indicacoes
+      where status in ('registrada', 'iniciou')
+    ),
+    'maiorPontuacao', (
+      select coalesce(max(pontos), 0) from ranking_do_desafio(p_desafio)
+    ),
+    'media', (
+      select coalesce(round(avg(pontos))::int, 0) from ranking_do_desafio(p_desafio)
+    ),
+    'acoesMaisFeitas', (
+      -- Cast para int: ordenar por texto poria '9' na frente de '10'.
+      select coalesce(jsonb_agg(x order by (x->>'total')::int desc), '[]'::jsonb) from (
+        select jsonb_build_object('nome', a.nome, 'total', count(e.id)) as x
+        from desafio_acoes a
+        left join desafio_envios e on e.acao_id = a.id and e.status = 'aprovado'
+        where a.desafio_id = p_desafio
+        group by a.nome
+      ) t
+    )
+  );
+end;
+$$;
+
+grant execute on function painel_do_desafio(uuid) to authenticated;
+
+
+-- ###########################################################################
+-- 0010_desafio_fechaduras.sql
+-- ###########################################################################
+
+-- =============================================================================
+-- CENTRAL DO PACIENTE — 0010: fechando o que o verificador do Supabase achou
+--
+-- Duas falhas reais, encontradas depois que o 0006–0009 subiu. Vale registrar
+-- o que eram, porque a lição serve para qualquer função nova daqui em diante.
+--
+-- 1. FUNÇÃO SEM DONO DA PERGUNTA
+--
+--    `saldo_de_pontos(paciente)` recebia um id e devolvia o saldo — sem
+--    perguntar de quem era o id. Uma paciente autenticada poderia ler o saldo
+--    de outra passando o id dela. A política de `pontos_lancamentos` está
+--    certa, mas a função é `security definer`: ela passa por cima da política,
+--    e por isso precisa fazer a checagem no corpo. O mesmo valia para
+--    `pontos_no_desafio` e `ranking_do_desafio`.
+--
+-- 2. FUNÇÃO ABERTA PARA QUEM NEM ENTROU
+--
+--    O Supabase publica toda função de `public` como endereço REST, e o papel
+--    `anon` — visitante sem login — vinha com permissão de executar. A chave
+--    pública do app está dentro do HTML publicado, de propósito, então
+--    qualquer pessoa poderia chamar `desafio_atual()`, pegar o id, chamar
+--    `ranking_do_desafio(id)` e receber os nomes e pontos das pacientes dela.
+--
+--    Sem login. Sem ser paciente. Só com o endereço do site.
+--
+--    A correção é tirar `anon` e `public` de tudo que toca dado, e deixar o
+--    `grant` só para `authenticated` — que ainda passa pelas checagens acima.
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- 1. As funções que devolvem dado passam a perguntar de quem é
+-- -----------------------------------------------------------------------------
+
+create or replace function saldo_de_pontos(p_paciente uuid)
+returns integer
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+begin
+  -- Cada uma vê o seu; a nutricionista vê o de todas.
+  --
+  -- O `coalesce` não é enfeite: `null = qualquer coisa` dá null, e `if null`
+  -- não entra — um id nulo passaria direto pela checagem. Devolveria zero, o
+  -- que é inofensivo, mas uma guarda que depende de sorte não é guarda.
+  if not coalesce(e_admin() or p_paciente = meu_paciente_id(), false) then
+    raise exception 'Você só pode ver os seus pontos.' using errcode = '42501';
+  end if;
+  return (
+    select coalesce(sum(pontos), 0)::int
+    from pontos_lancamentos where paciente_id = p_paciente
+  );
+end;
+$$;
+
+create or replace function pontos_no_desafio(p_paciente uuid, p_desafio uuid)
+returns integer
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+begin
+  if not coalesce(e_admin() or p_paciente = meu_paciente_id(), false) then
+    raise exception 'Você só pode ver os seus pontos.' using errcode = '42501';
+  end if;
+  return (
+    select coalesce(sum(pontos), 0)::int
+    from pontos_lancamentos
+    where paciente_id = p_paciente and desafio_id = p_desafio
+  );
+end;
+$$;
+
+/**
+ * O ranking é a única tela em que uma paciente vê outra, e continua sendo —
+ * mas agora só para quem está autenticado E com acesso válido. Uma paciente
+ * vencida ou suspensa não lê mais os nomes das outras.
+ */
+create or replace function ranking_do_desafio(p_desafio uuid)
+returns table (posicao integer, paciente_id uuid, nome text, pontos integer, sou_eu boolean)
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+begin
+  if not coalesce(e_admin() or tem_acesso(), false) then
+    raise exception 'Seu acesso não está liberado.' using errcode = '42501';
+  end if;
+
+  return query
+  with envolvidas as (
+    select dp.paciente_id from desafio_participantes dp where dp.desafio_id = p_desafio
+    union
+    select l.paciente_id from pontos_lancamentos l where l.desafio_id = p_desafio
+  ),
+  somas as (
+    select p.id, p.nome, coalesce(sum(l.pontos), 0)::int as pontos
+    from envolvidas e
+    join pacientes p on p.id = e.paciente_id
+    left join pontos_lancamentos l on l.paciente_id = p.id and l.desafio_id = p_desafio
+    group by p.id, p.nome
+  )
+  select
+    rank() over (order by s.pontos desc)::int,
+    s.id,
+    nome_para_ranking(s.nome),
+    s.pontos,
+    s.id = meu_paciente_id()
+  from somas s
+  order by s.pontos desc, s.nome;
+end;
+$$;
+
+-- `meu_desafio()` chama `saldo_de_pontos` para o próprio id, então continua
+-- funcionando — mas sem paciente vinculado ele agora explodiria. Trata antes.
+create or replace function meu_desafio()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_desafio desafios;
+  v_paciente uuid;
+  v_semana integer;
+  v_pontos_mes integer;
+  v_saldo integer;
+  v_posicao integer;
+  v_proxima integer;
+begin
+  v_paciente := meu_paciente_id();
+
+  -- Sem cadastro de paciente vinculado não há desafio nenhum a mostrar. É o
+  -- caso de quem tem conta mas ainda não é paciente — e da nutricionista.
+  if v_paciente is null then
+    return jsonb_build_object('temDesafio', false, 'saldoAcumulado', 0, 'recompensas', '[]'::jsonb);
+  end if;
+
+  select * into v_desafio from desafios where id = desafio_atual();
+  v_saldo := coalesce(saldo_de_pontos(v_paciente), 0);
+
+  if v_desafio.id is null then
+    return jsonb_build_object(
+      'temDesafio', false,
+      'saldoAcumulado', v_saldo,
+      'recompensas', (
+        select coalesce(jsonb_agg(jsonb_build_object(
+          'id', r.id, 'pontos', r.pontos, 'nome', r.nome, 'descricao', r.descricao,
+          'alcancada', v_saldo >= r.pontos
+        ) order by r.ordem), '[]'::jsonb)
+        from recompensas r where r.ativo
+      )
+    );
+  end if;
+
+  v_semana := semana_do_desafio(v_desafio.id);
+  v_pontos_mes := coalesce(pontos_no_desafio(v_paciente, v_desafio.id), 0);
+  select r.posicao into v_posicao from ranking_do_desafio(v_desafio.id) r where r.sou_eu;
+  select min(r.pontos) - v_pontos_mes into v_proxima
+  from ranking_do_desafio(v_desafio.id) r where r.pontos > v_pontos_mes;
+
+  return jsonb_build_object(
+    'temDesafio', true,
+    'desafio', jsonb_build_object(
+      'id', v_desafio.id, 'nome', v_desafio.nome, 'descricao', v_desafio.descricao,
+      'lema', v_desafio.lema, 'regras', v_desafio.regras,
+      'dataInicio', v_desafio.data_inicio, 'dataFim', v_desafio.data_fim,
+      'situacao', situacao_desafio(v_desafio.status, v_desafio.data_inicio, v_desafio.data_fim),
+      'semanaAtual', v_semana, 'totalDeSemanas', total_de_semanas(v_desafio.id)
+    ),
+    'pontosNoMes', v_pontos_mes,
+    'saldoAcumulado', v_saldo,
+    'posicao', v_posicao,
+    'pontosParaProxima', v_proxima,
+    'acoes', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'id', a.id, 'chave', a.chave, 'nome', a.nome, 'descricao', a.descricao,
+        'pontos', a.pontos, 'periodicidade', a.periodicidade,
+        'envio', (
+          select jsonb_build_object(
+            'id', e.id, 'status', e.status, 'semana', e.semana,
+            'observacao', e.observacao, 'motivoRecusa', e.motivo_recusa,
+            'enviadoEm', e.enviado_em, 'pontosConcedidos', e.pontos_concedidos
+          )
+          from desafio_envios e
+          where e.acao_id = a.id and e.paciente_id = v_paciente
+            and (a.periodicidade <> 'semanal' or e.semana = v_semana)
+            and e.status <> 'recusado'
+          order by e.enviado_em desc limit 1
+        ),
+        'aprovadas', (
+          select count(*) from desafio_envios e
+          where e.acao_id = a.id and e.paciente_id = v_paciente and e.status = 'aprovado'
+        )
+      ) order by a.ordem), '[]'::jsonb)
+      from desafio_acoes a where a.desafio_id = v_desafio.id and a.ativo
+    ),
+    'ranking', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'posicao', r.posicao, 'nome', r.nome, 'pontos', r.pontos, 'souEu', r.sou_eu
+      ) order by r.posicao, r.nome), '[]'::jsonb)
+      from ranking_do_desafio(v_desafio.id) r
+    ),
+    'historico', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'id', l.id, 'pontos', l.pontos, 'descricao', l.descricao,
+        'tipo', l.tipo, 'criadoEm', l.criado_em
+      ) order by l.criado_em desc), '[]'::jsonb)
+      from pontos_lancamentos l
+      where l.paciente_id = v_paciente and l.desafio_id = v_desafio.id
+    ),
+    'indicacoes', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'id', i.id, 'nome', i.nome_indicada, 'status', i.status,
+        'pontos', i.pontos_concedidos, 'criadoEm', i.criado_em
+      ) order by i.criado_em desc), '[]'::jsonb)
+      from indicacoes i where i.paciente_indicadora_id = v_paciente
+    ),
+    'recompensas', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'id', r.id, 'pontos', r.pontos, 'nome', r.nome, 'descricao', r.descricao,
+        'alcancada', v_saldo >= r.pontos
+      ) order by r.ordem), '[]'::jsonb)
+      from recompensas r where r.ativo
+    )
+  );
+end;
+$$;
+
+-- -----------------------------------------------------------------------------
+-- 2. `search_path` fixo em tudo
+--
+-- Sem isto, quem conseguisse criar um schema antes de `public` no caminho de
+-- busca poderia trocar o significado de uma função chamada lá dentro.
+-- -----------------------------------------------------------------------------
+
+alter function hoje_sp() set search_path = public;
+alter function situacao_paciente(text, uuid, date, date) set search_path = public;
+alter function tocar_atualizado_em() set search_path = public;
+alter function desafio_sem_sobreposicao() set search_path = public;
+alter function situacao_desafio(text, date, date) set search_path = public;
+
+-- -----------------------------------------------------------------------------
+-- 3. `anon` sai de tudo
+--
+-- O visitante sem login não precisa de nenhuma destas funções: a tela de
+-- entrar usa só o serviço de autenticação do próprio Supabase.
+-- -----------------------------------------------------------------------------
+
+-- Só as funções DESTE projeto. As que vieram junto com uma extensão ficam
+-- como estão: `citext_eq`, por exemplo, é o que compara dois e-mails, e
+-- revogar isso quebraria o login e toda busca por e-mail no app inteiro.
+do $$
+declare f record;
+begin
+  for f in
+    select p.oid::regprocedure as assinatura
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and not exists (
+        select 1 from pg_depend d
+        where d.objid = p.oid
+          and d.classid = 'pg_proc'::regclass
+          and d.deptype = 'e'
+      )
+  loop
+    execute format('revoke all on function %s from anon, public', f.assinatura);
+  end loop;
+end;
+$$;
+
+-- E os gatilhos não são para ninguém chamar pela mão.
+revoke all on function ao_criar_usuario() from authenticated;
+revoke all on function vincular_paciente_ao_perfil() from authenticated;
+revoke all on function registrar_evento_paciente() from authenticated;
+revoke all on function tocar_atualizado_em() from authenticated;
+revoke all on function desafio_sem_sobreposicao() from authenticated;
+
+-- O que a pessoa logada continua podendo chamar.
+grant execute on function tem_acesso() to authenticated;
+grant execute on function e_admin() to authenticated;
+grant execute on function meu_acesso() to authenticated;
+grant execute on function registrar_acesso() to authenticated;
+grant execute on function hoje_sp() to authenticated;
+grant execute on function situacao_paciente(text, uuid, date, date) to authenticated;
+grant execute on function situacao_desafio(text, date, date) to authenticated;
+grant execute on function config_inteiro(text, integer) to authenticated;
+grant execute on function enviar_acao(uuid, text) to authenticated;
+grant execute on function cancelar_envio(uuid) to authenticated;
+grant execute on function registrar_indicacao(text, text, text) to authenticated;
+grant execute on function ranking_do_desafio(uuid) to authenticated;
+grant execute on function saldo_de_pontos(uuid) to authenticated;
+grant execute on function pontos_no_desafio(uuid, uuid) to authenticated;
+grant execute on function semana_do_desafio(uuid, date) to authenticated;
+grant execute on function total_de_semanas(uuid) to authenticated;
+grant execute on function periodo_da_semana(uuid, integer) to authenticated;
+grant execute on function desafio_atual() to authenticated;
+grant execute on function meu_paciente_id() to authenticated;
+grant execute on function nome_para_ranking(text) to authenticated;
+grant execute on function meu_desafio() to authenticated;
+grant execute on function painel_do_desafio(uuid) to authenticated;
+grant execute on function aprovar_envio(uuid) to authenticated;
+grant execute on function recusar_envio(uuid, text) to authenticated;
+grant execute on function ajustar_pontos(uuid, integer, text, uuid) to authenticated;
+grant execute on function validar_indicacao(uuid, uuid) to authenticated;
+grant execute on function recusar_indicacao(uuid, text) to authenticated;
+
+-- E as tabelas também: `anon` não lê nada.
+do $$
+declare t text;
+begin
+  foreach t in array array[
+    'perfis', 'planos', 'pacientes', 'convites', 'historico_admin', 'unidades',
+    'grupos_alimentares', 'alimentos', 'equivalencias', 'conteudos', 'favoritos',
+    'configuracoes', 'desafios', 'desafio_acoes', 'desafio_participantes',
+    'desafio_envios', 'pontos_lancamentos', 'indicacoes', 'recompensas'
+  ] loop
+    execute format('revoke all on table %I from anon', t);
+  end loop;
+end;
+$$;
+
+
+-- ###########################################################################
+-- 0011_desafio_dados.sql
+-- ###########################################################################
+
+-- =============================================================================
+-- CENTRAL DO PACIENTE — 0011: o primeiro desafio e as recompensas
+--
+-- Os valores aqui são os do programa dela, copiados do briefing e de mais
+-- nada. Nenhuma ação foi inventada, e duas que existem no documento original
+-- ficaram DE FORA a pedido dela: participar da comunidade e enviar feedback
+-- não geram pontos nesta implementação.
+--
+-- O desafio nasce com as datas do mês corrente, não com "setembro" escrito à
+-- mão: quem instalar isto em outubro ganha o desafio de outubro. Daqui em
+-- diante ela cria os próximos pelo painel, sem tocar em código.
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- Recompensas do Ponto de Virada (§47)
+--
+-- Os quatro degraus do programa. Os pontos não expiram e trocar uma
+-- recompensa não zera o saldo — quem soma é o ledger, e ele não apaga nada.
+-- -----------------------------------------------------------------------------
+
+insert into recompensas (id, pontos, nome, descricao, ordem) values
+  ('r200', 200, '30 dias de acompanhamento', null, 1),
+  ('r300', 300, 'Kit degustação', 'Dois produtos de marcas parceiras.', 2),
+  ('r400', 400, 'Consulta extra', null, 3),
+  ('r500', 500, 'Kit completo', 'Um produto de cada marca parceira, mais um mimo exclusivo.', 4)
+on conflict (id) do nothing;
+
+-- -----------------------------------------------------------------------------
+-- Como o ranking mostra os nomes (§19)
+--
+-- 'primeiro_inicial' = "Ana M.". Ela troca por 'primeiro' ou 'completo' em
+-- Configurações, sem publicar o site de novo.
+-- -----------------------------------------------------------------------------
+
+insert into configuracoes (chave, valor, descricao) values
+  ('ranking_nome', '"primeiro_inicial"'::jsonb,
+   'Como o nome aparece no ranking: completo, primeiro ou primeiro_inicial.')
+on conflict (chave) do nothing;
+
+-- -----------------------------------------------------------------------------
+-- O desafio do mês corrente
+-- -----------------------------------------------------------------------------
+
+do $$
+declare
+  v_inicio date := date_trunc('month', hoje_sp())::date;
+  v_fim date := (date_trunc('month', hoje_sp()) + interval '1 month - 1 day')::date;
+  v_meses text[] := array[
+    'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+    'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
+  ];
+  v_nome text;
+  v_id uuid;
+begin
+  -- Se já existe desafio cobrindo este mês, não faz nada: rodar duas vezes
+  -- não pode criar um segundo nem sobrescrever o que ela já editou.
+  if exists (
+    select 1 from desafios
+    where status <> 'rascunho'
+      and daterange(data_inicio, data_fim, '[]') && daterange(v_inicio, v_fim, '[]')
+  ) then
+    return;
+  end if;
+
+  v_nome := 'Desafio de ' || initcap(v_meses[extract(month from v_inicio)::int]);
+
+  insert into desafios (nome, lema, descricao, data_inicio, data_fim, status, regras)
+  values (
+    v_nome,
+    'Cada pequena ação conta.',
+    'Um mês de constância. Marque o que você fez, e eu confiro.',
+    v_inicio,
+    v_fim,
+    'ativo',
+    'O ranking mostra sua constância no desafio, não o seu resultado corporal. '
+    || 'Marcar uma ação não dá pontos na hora: eu confiro cada uma, e os pontos entram depois disso.'
+  )
+  returning id into v_id;
+
+  -- As cinco ações, com a pontuação exata do programa.
+  insert into desafio_acoes
+    (desafio_id, chave, nome, descricao, pontos, periodicidade, max_ocorrencias, ordem)
+  values
+    (v_id, 'questionario', 'Respondi meu questionário semanal',
+     null, 5, 'semanal', null, 1),
+    (v_id, 'metas', 'Cumpri minhas metas da semana',
+     null, 5, 'semanal', null, 2),
+    (v_id, 'diario', 'Enviei meu diário alimentar',
+     null, 5, 'semanal', null, 3),
+    (v_id, 'redes', 'Compartilhei minha evolução e te marquei',
+     'Uma vez por semana.', 10, 'semanal', null, 4),
+    (v_id, 'indicacao', 'Indiquei uma amiga',
+     'Os pontos entram quando ela começa o acompanhamento.', 50, 'evento', null, 5);
+end;
+$$;

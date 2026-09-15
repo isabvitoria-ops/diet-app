@@ -28,6 +28,17 @@ for arquivo in "$RAIZ"/supabase/migracoes/*.sql; do
   PGOPTIONS="-c client_min_messages=warning" psql_ -q -d "$BANCO" -f "$arquivo" > /dev/null
 done
 
+# A 0010 revoga `anon` e `public` de TODA função de `public` — inclusive da
+# auxiliar das baterias, que só existe no banco de teste. Devolver aqui mantém
+# a migração honesta: ela não abre exceção para nada que vá para produção.
+psql_ -q -d "$BANCO" -c "do \$\$ declare f record; begin
+  for f in select p.oid::regprocedure as a from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.proname in ('teste', 'nao_alterou', 'conferir', 'recusou', 'aceitou')
+  loop execute format('grant execute on function %s to anon, authenticated', f.a); end loop;
+end \$\$;" > /dev/null
+
 echo "Rodando a bateria de segurança…"
-psql_ -d "$BANCO" -f "$RAIZ/supabase/testes/01_acesso.sql" 2>&1 \
-  | grep -E "FALHA|passaram|ERROR|falharam" || true
+for bateria in "$RAIZ"/supabase/testes/0[1-9]_*.sql; do
+  psql_ -d "$BANCO" -f "$bateria" 2>&1 \
+    | grep -E "FALHA|passaram|ERROR|falharam" || true
+done
