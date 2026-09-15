@@ -1,15 +1,27 @@
 import type {
+  AcaoDoDesafio,
   Alimento,
   CategoriaComerFora,
   Configuracoes,
+  DesafioAdmin,
+  EnvioPendente,
   Equivalencia,
   EventoHistorico,
   Favorito,
   Guia,
+  IndicacaoPendente,
+  LinhaDoRanking,
+  MeuDesafio,
   NovoPaciente,
   Paciente,
   Plano,
 } from "@/central/types";
+import {
+  periodoDaSemana as _periodoDaSemana,
+  semanaDoDesafio,
+  situacaoDoDesafio,
+  totalDeSemanas,
+} from "@/central/utils/desafio";
 import { armazenamentoLocal } from "@/central/utils/armazenamento";
 import { calcularSituacao, diasEntre, hojeSaoPaulo } from "@/central/utils/situacao";
 import { UNIDADES } from "./sementes/unidades";
@@ -241,4 +253,269 @@ export const repositorioLocal: Repositorio = {
   async registrarAcesso() {
     /* não há o que registrar sem banco */
   },
+
+  // ---------------------------------------------------------------- desafio
+  //
+  // A demonstração aprova na hora, e isso é uma diferença deliberada em
+  // relação à produção: sem banco não há nutricionista para conferir, e um
+  // checklist que nunca sai de "aguardando" não mostraria como a tela fica.
+  // A faixa amarela do topo avisa o tempo todo que ali nada é de verdade.
+
+  async meuDesafio() {
+    const desafio = desafioDemo();
+    const envios = guardaEnvios.ler();
+    const semana = semanaDoDesafio(desafio.dataInicio, desafio.dataFim) ?? 1;
+
+    const acoes: AcaoDoDesafio[] = ACOES_DEMO.map((a) => {
+      const meu = envios.find(
+        (e) => e.acaoId === a.id && (a.periodicidade !== "semanal" || e.semana === semana),
+      );
+      return {
+        ...a,
+        envio: meu
+          ? {
+              id: meu.id,
+              status: meu.status,
+              semana: meu.semana,
+              observacao: meu.observacao,
+              motivoRecusa: null,
+              enviadoEm: meu.enviadoEm,
+              pontosConcedidos: meu.status === "aprovado" ? a.pontos : 0,
+            }
+          : null,
+        aprovadas: envios.filter((e) => e.acaoId === a.id && e.status === "aprovado").length,
+      };
+    });
+
+    const pontosNoMes = acoes.reduce(
+      (soma, a) => soma + (a.envio?.status === "aprovado" ? a.pontos : 0),
+      0,
+    );
+    // Um saldo antigo de exemplo, para a tela mostrar a diferença entre o
+    // ponto do mês e o acumulado do programa.
+    const saldoAcumulado = pontosNoMes + 145;
+
+    const ranking: LinhaDoRanking[] = [
+      { posicao: 1, nome: "Ana M.", pontos: 75, souEu: false },
+      { posicao: 2, nome: "Maria S.", pontos: 70, souEu: false },
+      { posicao: 3, nome: "Júlia R.", pontos: 65, souEu: false },
+      { posicao: 4, nome: "Carla B.", pontos: 60, souEu: false },
+      { posicao: 5, nome: "Você", pontos: pontosNoMes, souEu: true },
+    ].sort((a, b) => b.pontos - a.pontos)
+      .map((l, i) => ({ ...l, posicao: i + 1 }));
+
+    const minha = ranking.find((l) => l.souEu)!;
+    const acima = ranking.filter((l) => l.pontos > pontosNoMes).map((l) => l.pontos);
+
+    return {
+      temDesafio: true,
+      desafio,
+      pontosNoMes,
+      saldoAcumulado,
+      posicao: minha.posicao,
+      pontosParaProxima: acima.length ? Math.min(...acima) - pontosNoMes : null,
+      acoes,
+      ranking,
+      historico: envios
+        .filter((e) => e.status === "aprovado")
+        .map((e) => ({
+          id: e.id,
+          pontos: ACOES_DEMO.find((a) => a.id === e.acaoId)?.pontos ?? 0,
+          descricao: ACOES_DEMO.find((a) => a.id === e.acaoId)?.nome ?? "",
+          tipo: "acao" as const,
+          criadoEm: e.enviadoEm,
+        })),
+      indicacoes: guardaIndicacoes.ler(),
+      recompensas: RECOMPENSAS_DEMO.map((r) => ({ ...r, alcancada: saldoAcumulado >= r.pontos })),
+    } satisfies MeuDesafio;
+  },
+
+  async enviarAcao(acaoId: string, observacao?: string | null) {
+    const desafio = desafioDemo();
+    const acao = ACOES_DEMO.find((a) => a.id === acaoId);
+    if (!acao) throw new Error("Esta ação não está disponível.");
+    const semana = acao.periodicidade === "semanal"
+      ? semanaDoDesafio(desafio.dataInicio, desafio.dataFim)
+      : null;
+    const envios = guardaEnvios.ler();
+    if (envios.some((e) => e.acaoId === acaoId && e.semana === semana && e.status !== "recusado")) {
+      throw new Error("Você já enviou esta ação.");
+    }
+    guardaEnvios.escrever([
+      ...envios,
+      {
+        id: `envio-${Date.now()}`,
+        acaoId,
+        semana,
+        status: "aprovado",
+        observacao: observacao ?? null,
+        enviadoEm: new Date().toISOString(),
+      },
+    ]);
+  },
+
+  async cancelarEnvio(envioId: string) {
+    guardaEnvios.escrever(guardaEnvios.ler().filter((e) => e.id !== envioId));
+  },
+
+  async registrarIndicacao(nome: string) {
+    guardaIndicacoes.escrever([
+      ...guardaIndicacoes.ler(),
+      {
+        id: `ind-${Date.now()}`,
+        nome,
+        status: "registrada",
+        pontos: 0,
+        criadoEm: new Date().toISOString(),
+      },
+    ]);
+  },
+
+  async listarDesafios() {
+    return [desafioDemoAdmin()];
+  },
+
+  async salvarDesafio() {
+    throw new Error("Criar desafio precisa do banco. Configure o Supabase.");
+  },
+
+  async painelDoDesafio() {
+    const envios = guardaEnvios.ler();
+    return {
+      elegiveis: 5,
+      participantes: 5,
+      semAcao: 1,
+      pendentes: envios.filter((e) => e.status === "enviado").length,
+      indicacoesPendentes: guardaIndicacoes.ler().filter((i) => i.status === "registrada").length,
+      maiorPontuacao: 75,
+      media: 54,
+      acoesMaisFeitas: ACOES_DEMO.map((a) => ({
+        nome: a.nome,
+        total: envios.filter((e) => e.acaoId === a.id && e.status === "aprovado").length,
+      })),
+    };
+  },
+
+  async rankingDoDesafio() {
+    return (await repositorioLocal.meuDesafio()).ranking ?? [];
+  },
+
+  async enviosPendentes(): Promise<EnvioPendente[]> {
+    return [];
+  },
+
+  async aprovarEnvio() {
+    /* na demonstração a aprovação já aconteceu no envio */
+  },
+
+  async recusarEnvio() {
+    /* idem */
+  },
+
+  async ajustarPontos() {
+    throw new Error("Ajustar pontos precisa do banco. Configure o Supabase.");
+  },
+
+  async listarIndicacoes(): Promise<IndicacaoPendente[]> {
+    return guardaIndicacoes.ler().map((i) => ({
+      id: i.id,
+      indicadoraNome: "Demonstração",
+      nomeIndicada: i.nome,
+      emailIndicada: null,
+      telefoneIndicada: null,
+      status: i.status,
+      criadoEm: i.criadoEm,
+    }));
+  },
+
+  async validarIndicacao(indicacaoId: string) {
+    guardaIndicacoes.escrever(
+      guardaIndicacoes.ler().map((i) =>
+        i.id === indicacaoId ? { ...i, status: "validada" as const, pontos: 50 } : i,
+      ),
+    );
+  },
+
+  async recusarIndicacao(indicacaoId: string) {
+    guardaIndicacoes.escrever(
+      guardaIndicacoes.ler().map((i) =>
+        i.id === indicacaoId ? { ...i, status: "recusada" as const } : i,
+      ),
+    );
+  },
 };
+
+// ---------------------------------------------------------------- dados da demonstração
+
+interface EnvioDemo {
+  id: string;
+  acaoId: string;
+  semana: number | null;
+  status: "enviado" | "aprovado" | "recusado";
+  observacao: string | null;
+  enviadoEm: string;
+}
+
+const guardaEnvios = armazenamentoLocal<EnvioDemo>("central:demo:desafio:envios:v1");
+const guardaIndicacoes = armazenamentoLocal<{
+  id: string;
+  nome: string;
+  status: "registrada" | "iniciou" | "validada" | "recusada";
+  pontos: number;
+  criadoEm: string;
+}>("central:demo:desafio:indicacoes:v1");
+
+const MESES = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+];
+
+/** O desafio do mês corrente, calculado — nada de "setembro" escrito à mão. */
+function desafioDemo() {
+  const hoje = hojeSaoPaulo();
+  const [ano, mes] = hoje.split("-").map(Number) as [number, number];
+  const inicio = `${ano}-${String(mes).padStart(2, "0")}-01`;
+  const ultimo = new Date(Date.UTC(ano, mes, 0)).getUTCDate();
+  const fim = `${ano}-${String(mes).padStart(2, "0")}-${ultimo}`;
+  return {
+    id: "demo",
+    nome: `Desafio de ${MESES[mes - 1]}`,
+    descricao: "Um mês de constância. Marque o que você fez, e eu confiro.",
+    lema: "Cada pequena ação conta.",
+    regras:
+      "O ranking mostra sua constância no desafio, não o seu resultado corporal. " +
+      "Marcar uma ação não dá pontos na hora: eu confiro cada uma, e os pontos entram depois disso.",
+    dataInicio: inicio,
+    dataFim: fim,
+    situacao: situacaoDoDesafio("ativo", inicio, fim),
+    semanaAtual: semanaDoDesafio(inicio, fim),
+    totalDeSemanas: totalDeSemanas(inicio, fim),
+  };
+}
+
+function desafioDemoAdmin(): DesafioAdmin {
+  return { ...desafioDemo(), status: "ativo" };
+}
+
+/** As mesmas cinco ações e pontuações do banco (0011_desafio_dados.sql). */
+const ACOES_DEMO = [
+  { id: "a-questionario", chave: "questionario", nome: "Respondi meu questionário semanal",
+    descricao: null, pontos: 5, periodicidade: "semanal" as const },
+  { id: "a-metas", chave: "metas", nome: "Cumpri minhas metas da semana",
+    descricao: null, pontos: 5, periodicidade: "semanal" as const },
+  { id: "a-diario", chave: "diario", nome: "Enviei meu diário alimentar",
+    descricao: null, pontos: 5, periodicidade: "semanal" as const },
+  { id: "a-redes", chave: "redes", nome: "Compartilhei minha evolução e te marquei",
+    descricao: "Uma vez por semana.", pontos: 10, periodicidade: "semanal" as const },
+  { id: "a-indicacao", chave: "indicacao", nome: "Indiquei uma amiga",
+    descricao: "Os pontos entram quando ela começa o acompanhamento.", pontos: 50,
+    periodicidade: "evento" as const },
+];
+
+const RECOMPENSAS_DEMO = [
+  { id: "r200", pontos: 200, nome: "30 dias de acompanhamento", descricao: null },
+  { id: "r300", pontos: 300, nome: "Kit degustação", descricao: "Dois produtos de marcas parceiras." },
+  { id: "r400", pontos: 400, nome: "Consulta extra", descricao: null },
+  { id: "r500", pontos: 500, nome: "Kit completo",
+    descricao: "Um produto de cada marca parceira, mais um mimo exclusivo." },
+];

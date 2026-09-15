@@ -11,6 +11,7 @@ import { rotas } from "@/central/rotas";
  */
 const ITENS: { rota: string; rotulo: string; icone: NomeIcone; fim?: boolean }[] = [
   { rota: rotas.home, rotulo: "Início", icone: "inicio", fim: true },
+  { rota: rotas.desafio, rotulo: "Desafio", icone: "relogio" },
   { rota: rotas.trocas, rotulo: "Trocas", icone: "troca" },
   { rota: rotas.comerFora, rotulo: "Comer fora", icone: "comerFora" },
   { rota: rotas.guias, rotulo: "Guias", icone: "guias" },

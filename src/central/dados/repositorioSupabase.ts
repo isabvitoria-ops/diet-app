@@ -2,14 +2,19 @@ import type {
   Alimento,
   CategoriaComerFora,
   Configuracoes,
+  DesafioAdmin,
   Equivalencia,
   EventoHistorico,
   Favorito,
   Guia,
+  IndicacaoPendente,
+  MeuDesafio,
   NovoPaciente,
   Paciente,
+  PainelDoDesafio,
   Plano,
 } from "@/central/types";
+import { semanaDoDesafio, situacaoDoDesafio, totalDeSemanas } from "@/central/utils/desafio";
 import { exigirSupabase } from "@/central/supabase/cliente";
 import { urlDaRota } from "@/central/utils/enderecos";
 import {
@@ -23,6 +28,10 @@ import {
   paraPaciente,
   paraPlano,
   paraUnidade,
+  numero,
+  texto,
+  textoOuNulo,
+  type Linha,
 } from "./mapeadores";
 import type { AlteracaoPaciente, DadosCatalogo, Repositorio } from "./repositorio";
 
@@ -319,5 +328,170 @@ export const repositorioSupabase: Repositorio = {
     } catch {
       /* rede instável ou sessão trocando — o app continua igual */
     }
+  },
+
+  // ---------------------------------------------------------------- desafio
+
+  async meuDesafio() {
+    const sb = exigirSupabase();
+    const { data, error } = await sb.rpc("meu_desafio");
+    erro("carregar o desafio", error);
+    return (data ?? { temDesafio: false, saldoAcumulado: 0, recompensas: [] }) as MeuDesafio;
+  },
+
+  async enviarAcao(acaoId: string, observacao?: string | null) {
+    const sb = exigirSupabase();
+    const { error } = await sb.rpc("enviar_acao", { p_acao: acaoId, p_observacao: observacao ?? null });
+    erro("marcar a ação", error);
+  },
+
+  async cancelarEnvio(envioId: string) {
+    const sb = exigirSupabase();
+    const { error } = await sb.rpc("cancelar_envio", { p_envio: envioId });
+    erro("desfazer o envio", error);
+  },
+
+  async registrarIndicacao(nome: string, email?: string | null, telefone?: string | null) {
+    const sb = exigirSupabase();
+    const { error } = await sb.rpc("registrar_indicacao", {
+      p_nome: nome,
+      p_email: email ?? null,
+      p_telefone: telefone ?? null,
+    });
+    erro("registrar a indicação", error);
+  },
+
+  async listarDesafios() {
+    const sb = exigirSupabase();
+    const { data, error } = await sb
+      .from("desafios")
+      .select("*")
+      .order("data_inicio", { ascending: false });
+    erro("listar desafios", error);
+    return (data ?? []).map((l: Linha) => ({
+      id: texto(l.id),
+      nome: texto(l.nome),
+      descricao: textoOuNulo(l.descricao),
+      lema: textoOuNulo(l.lema),
+      regras: textoOuNulo(l.regras),
+      dataInicio: texto(l.data_inicio),
+      dataFim: texto(l.data_fim),
+      status: (l.status as DesafioAdmin["status"]) ?? "rascunho",
+      situacao: situacaoDoDesafio(texto(l.status), texto(l.data_inicio), texto(l.data_fim)),
+      semanaAtual: semanaDoDesafio(texto(l.data_inicio), texto(l.data_fim)),
+      totalDeSemanas: totalDeSemanas(texto(l.data_inicio), texto(l.data_fim)),
+    }));
+  },
+
+  async salvarDesafio(desafio) {
+    const sb = exigirSupabase();
+    const linha = {
+      nome: desafio.nome,
+      descricao: desafio.descricao ?? null,
+      lema: desafio.lema ?? null,
+      regras: desafio.regras ?? null,
+      data_inicio: desafio.dataInicio,
+      data_fim: desafio.dataFim,
+      status: desafio.status ?? "rascunho",
+    };
+    const { error } = desafio.id
+      ? await sb.from("desafios").update(linha).eq("id", desafio.id)
+      : await sb.from("desafios").insert(linha);
+    erro("salvar o desafio", error);
+  },
+
+  async painelDoDesafio(desafioId: string) {
+    const sb = exigirSupabase();
+    const { data, error } = await sb.rpc("painel_do_desafio", { p_desafio: desafioId });
+    erro("carregar o painel do desafio", error);
+    return data as PainelDoDesafio;
+  },
+
+  async rankingDoDesafio(desafioId: string) {
+    const sb = exigirSupabase();
+    const { data, error } = await sb.rpc("ranking_do_desafio", { p_desafio: desafioId });
+    erro("carregar o ranking", error);
+    return (data ?? []).map((l: Linha) => ({
+      posicao: numero(l.posicao),
+      nome: texto(l.nome),
+      pontos: numero(l.pontos),
+      souEu: l.sou_eu === true,
+    }));
+  },
+
+  async enviosPendentes(desafioId: string) {
+    const sb = exigirSupabase();
+    const { data, error } = await sb
+      .from("desafio_envios")
+      .select("id, semana, observacao, enviado_em, pacientes(nome), desafio_acoes(nome, pontos)")
+      .eq("desafio_id", desafioId)
+      .eq("status", "enviado")
+      .order("enviado_em", { ascending: true });
+    erro("listar pendências", error);
+    return (data ?? []).map((l: Linha) => ({
+      id: texto(l.id),
+      pacienteNome: texto((l.pacientes as Linha | null)?.nome),
+      acaoNome: texto((l.desafio_acoes as Linha | null)?.nome),
+      pontos: numero((l.desafio_acoes as Linha | null)?.pontos),
+      semana: l.semana === null ? null : numero(l.semana),
+      observacao: textoOuNulo(l.observacao),
+      enviadoEm: texto(l.enviado_em),
+    }));
+  },
+
+  async aprovarEnvio(envioId: string) {
+    const sb = exigirSupabase();
+    const { error } = await sb.rpc("aprovar_envio", { p_envio: envioId });
+    erro("aprovar", error);
+  },
+
+  async recusarEnvio(envioId: string, motivo?: string | null) {
+    const sb = exigirSupabase();
+    const { error } = await sb.rpc("recusar_envio", { p_envio: envioId, p_motivo: motivo ?? null });
+    erro("recusar", error);
+  },
+
+  async ajustarPontos(pacienteId: string, pontos: number, motivo: string, desafioId?: string | null) {
+    const sb = exigirSupabase();
+    const { error } = await sb.rpc("ajustar_pontos", {
+      p_paciente: pacienteId,
+      p_pontos: pontos,
+      p_motivo: motivo,
+      p_desafio: desafioId ?? null,
+    });
+    erro("ajustar pontos", error);
+  },
+
+  async listarIndicacoes() {
+    const sb = exigirSupabase();
+    const { data, error } = await sb
+      .from("indicacoes")
+      .select("id, nome_indicada, email_indicada, telefone_indicada, status, criado_em, pacientes!indicacoes_paciente_indicadora_id_fkey(nome)")
+      .order("criado_em", { ascending: false });
+    erro("listar indicações", error);
+    return (data ?? []).map((l: Linha) => ({
+      id: texto(l.id),
+      indicadoraNome: texto((l.pacientes as Linha | null)?.nome),
+      nomeIndicada: texto(l.nome_indicada),
+      emailIndicada: textoOuNulo(l.email_indicada),
+      telefoneIndicada: textoOuNulo(l.telefone_indicada),
+      status: (l.status as IndicacaoPendente["status"]) ?? "registrada",
+      criadoEm: texto(l.criado_em),
+    }));
+  },
+
+  async validarIndicacao(indicacaoId: string) {
+    const sb = exigirSupabase();
+    const { error } = await sb.rpc("validar_indicacao", { p_indicacao: indicacaoId });
+    erro("validar a indicação", error);
+  },
+
+  async recusarIndicacao(indicacaoId: string, motivo?: string | null) {
+    const sb = exigirSupabase();
+    const { error } = await sb.rpc("recusar_indicacao", {
+      p_indicacao: indicacaoId,
+      p_motivo: motivo ?? null,
+    });
+    erro("recusar a indicação", error);
   },
 };

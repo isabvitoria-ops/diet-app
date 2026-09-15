@@ -23,6 +23,7 @@ export const rotas = {
     `/comer-fora/${categoriaId}?opcao=${encodeURIComponent(opcaoId)}`,
   guias: "/guias",
   guia: (guiaId: string) => `/guias/${guiaId}`,
+  desafio: "/desafio",
   salvos: "/salvos",
   busca: (consulta?: string) => (consulta ? `/busca?q=${encodeURIComponent(consulta)}` : "/busca"),
   diagnostico: "/diagnostico",
@@ -41,6 +42,7 @@ export const rotas = {
   adminEquivalencias: "/admin/equivalencias",
   adminConteudos: "/admin/conteudos",
   adminConfiguracoes: "/admin/configuracoes",
+  adminDesafios: "/admin/desafios",
 };
 
 /** Prefixo antigo, mantido para não quebrar link já enviado a paciente. */

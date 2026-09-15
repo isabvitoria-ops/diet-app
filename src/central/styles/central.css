@@ -1076,6 +1076,397 @@ body:has(.central) {
   outline-offset: 2px;
 }
 
+/* ---------------------------------------------------------------- desafio */
+
+.c-desafio-lema {
+  margin-top: 16px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  color: var(--primary-dark);
+  border-left: 3px solid var(--primary);
+  padding-left: 12px;
+  line-height: 1.4;
+}
+
+/* O placar: mês grande, acumulado pequeno. A hierarquia visual é a própria
+   regra — são duas contagens diferentes, e a do mês é a do ranking. */
+.c-placar {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+  margin-top: 20px;
+}
+
+.c-placar-mes {
+  flex: 1;
+  background: var(--primary);
+  color: var(--surface);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.c-placar-mes strong {
+  font-family: var(--font-display);
+  font-size: 44px;
+  line-height: 1;
+  font-weight: 600;
+}
+
+.c-placar-mes span {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.c-placar-posicao {
+  flex: 0 0 96px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.c-placar-posicao span {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.c-placar-posicao strong {
+  font-family: var(--font-display);
+  font-size: 30px;
+  line-height: 1;
+  color: var(--primary-dark);
+}
+
+.c-placar-acumulado {
+  margin-top: 10px;
+  font-size: 13.5px;
+  color: var(--text-muted);
+}
+
+.c-placar-acumulado strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.c-desafio-frase {
+  margin-top: 14px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--text);
+}
+
+/* Confirmação discreta depois de marcar. Some sozinha. */
+.c-festejo {
+  margin-top: 16px;
+  background: var(--success-soft);
+  color: var(--success);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: 13.5px;
+  animation: c-surgir 0.24s ease;
+}
+
+@keyframes c-surgir {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .c-festejo { animation: none; }
+}
+
+.c-acoes {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.c-acao {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.c-acao.aprovado {
+  border-color: var(--success);
+  background: var(--success-soft);
+}
+
+.c-acao.pendente {
+  border-color: var(--border-strong);
+}
+
+.c-acao-topo {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.c-acao-texto {
+  flex: 1;
+  min-width: 0;
+}
+
+.c-acao-texto strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.c-acao-descricao {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.c-acao-pontos {
+  flex: none;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.c-acao-estado {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.c-acao .c-botao-pequeno {
+  margin-top: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Painel de números da área da nutricionista. */
+.c-numeros {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.c-numero {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+}
+
+.c-numero.destaque {
+  border-color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.c-numero strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 1;
+  color: var(--primary-dark);
+}
+
+.c-numero.destaque strong { color: #6d5116; }
+
+.c-numero span {
+  display: block;
+  margin-top: 5px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+/* ---------------------------------------------------------------- ranking */
+
+.c-ranking {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.c-ranking-linha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+
+/* Destaque para o pódio sem medalha nem confete: só peso tipográfico. */
+.c-ranking-linha.destaque .c-ranking-posicao {
+  color: var(--primary);
+  font-size: 17px;
+}
+
+.c-ranking-linha.eu {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.c-ranking-posicao {
+  flex: 0 0 34px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.c-ranking-nome {
+  flex: 1;
+  min-width: 0;
+  font-size: 14.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.c-ranking-linha.eu .c-ranking-nome {
+  font-weight: 600;
+  color: var(--primary-dark);
+}
+
+.c-ranking-pontos {
+  flex: none;
+  font-size: 13.5px;
+  color: var(--text-muted);
+}
+
+/* ---------------------------------------------------------------- recompensas */
+
+.c-progresso {
+  margin-top: 14px;
+  height: 8px;
+  background: var(--border);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.c-progresso-barra {
+  height: 100%;
+  background: var(--primary);
+  border-radius: var(--radius-pill);
+  transition: width 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .c-progresso-barra { transition: none; }
+}
+
+.c-recompensas {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.c-recompensa {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+
+.c-recompensa.alcancada {
+  border-color: var(--success);
+  background: var(--success-soft);
+}
+
+.c-recompensa-pontos {
+  flex: 0 0 46px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.c-recompensa-texto {
+  flex: 1;
+  min-width: 0;
+}
+
+.c-recompensa-texto strong {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.c-recompensa-texto span {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+/* Card do desafio na Home: chama atenção sem tomar a tela. */
+.c-card-desafio {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--primary);
+  background: var(--primary-soft);
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.c-card-desafio:hover { background: var(--surface); }
+
+.c-card-desafio:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.c-card-desafio-texto { flex: 1; min-width: 0; }
+
+.c-card-desafio-texto strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--primary-dark);
+}
+
+.c-card-desafio-texto span {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.c-card-desafio-numero {
+  flex: none;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--primary);
+  line-height: 1;
+}
+
 /* ---------------------------------------------------------------- logos */
 
 .c-logo {

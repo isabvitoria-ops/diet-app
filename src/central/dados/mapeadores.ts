@@ -21,11 +21,11 @@ import type {
  * conhece o formato da linha.
  */
 
-type Linha = Record<string, unknown>;
+export type Linha = Record<string, unknown>;
 
-const texto = (v: unknown): string => (typeof v === "string" ? v : "");
-const textoOuNulo = (v: unknown): string | null => (typeof v === "string" && v !== "" ? v : null);
-const numero = (v: unknown): number => (typeof v === "number" ? v : Number(v) || 0);
+export const texto = (v: unknown): string => (typeof v === "string" ? v : "");
+export const textoOuNulo = (v: unknown): string | null => (typeof v === "string" && v !== "" ? v : null);
+export const numero = (v: unknown): number => (typeof v === "number" ? v : Number(v) || 0);
 const numeroOuNulo = (v: unknown): number | null =>
   v === null || v === undefined ? null : Number(v);
 const booleano = (v: unknown): boolean => v === true;

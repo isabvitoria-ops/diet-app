@@ -2,13 +2,19 @@ import type {
   Alimento,
   CategoriaComerFora,
   Configuracoes,
+  DesafioAdmin,
+  EnvioPendente,
   Equivalencia,
   EventoHistorico,
   Favorito,
   GrupoAlimentar,
   Guia,
+  IndicacaoPendente,
+  LinhaDoRanking,
+  MeuDesafio,
   NovoPaciente,
   Paciente,
+  PainelDoDesafio,
   Plano,
   Unidade,
 } from "@/central/types";
@@ -72,6 +78,33 @@ export interface Repositorio {
 
   /** Marca presença do paciente. Falha em silêncio: não é crítico. */
   registrarAcesso(): Promise<void>;
+
+  // ---------------------------------------------------------------- desafio
+  //
+  // Repare que não existe `salvarPontos` nem nada parecido: o app não tem
+  // como escrever um ponto. Ele marca ação, registra indicação e lê o
+  // resultado. Quem transforma isso em ponto é o banco, na aprovação.
+
+  /** Tudo que a tela do desafio mostra, numa chamada só. */
+  meuDesafio(): Promise<MeuDesafio>;
+  /** "Eu fiz isso." Nasce pendente, sempre. */
+  enviarAcao(acaoId: string, observacao?: string | null): Promise<void>;
+  /** Desfaz o próprio envio, enquanto não foi conferido. */
+  cancelarEnvio(envioId: string): Promise<void>;
+  registrarIndicacao(nome: string, email?: string | null, telefone?: string | null): Promise<void>;
+
+  // Área da nutricionista
+  listarDesafios(): Promise<DesafioAdmin[]>;
+  salvarDesafio(desafio: Partial<DesafioAdmin> & { nome: string; dataInicio: string; dataFim: string }): Promise<void>;
+  painelDoDesafio(desafioId: string): Promise<PainelDoDesafio>;
+  rankingDoDesafio(desafioId: string): Promise<LinhaDoRanking[]>;
+  enviosPendentes(desafioId: string): Promise<EnvioPendente[]>;
+  aprovarEnvio(envioId: string): Promise<void>;
+  recusarEnvio(envioId: string, motivo?: string | null): Promise<void>;
+  ajustarPontos(pacienteId: string, pontos: number, motivo: string, desafioId?: string | null): Promise<void>;
+  listarIndicacoes(): Promise<IndicacaoPendente[]>;
+  validarIndicacao(indicacaoId: string): Promise<void>;
+  recusarIndicacao(indicacaoId: string, motivo?: string | null): Promise<void>;
 }
 
 export const repositorio: Repositorio = MODO_DEMONSTRACAO ? repositorioLocal : repositorioSupabase;

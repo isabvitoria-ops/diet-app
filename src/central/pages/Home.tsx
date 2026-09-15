@@ -3,6 +3,7 @@ import { Icone, type NomeIcone } from "@/central/components/Icone";
 import { BarraBusca } from "@/central/components/BarraBusca";
 import { useState } from "react";
 import { rotas } from "@/central/rotas";
+import { useDesafio } from "@/central/hooks/useDesafio";
 import { useFavoritos } from "@/central/hooks/useFavoritos";
 import { useSessao } from "@/central/autenticacao/SessaoContexto";
 
@@ -104,6 +105,8 @@ export function Home() {
           </div>
         )}
 
+        <CardDoDesafio />
+
         <section className="c-secao">
           <div className="c-atalhos">
             {ATALHOS.map((atalho) => (
@@ -134,5 +137,36 @@ export function Home() {
         )}
       </div>
     </>
+  );
+}
+
+/**
+ * O desafio na Home.
+ *
+ * Só aparece quando há desafio no ar — e some sozinho quando o mês acaba,
+ * porque `meu_desafio()` responde pela data. Mostra o essencial (pontos do mês
+ * e posição) e leva para a tela cheia; não repete o checklist aqui para não
+ * dominar a Home, que é o que ela pediu no §33.
+ */
+function CardDoDesafio() {
+  const navegar = useNavigate();
+  const { dados, carregando } = useDesafio();
+
+  if (carregando || !dados?.temDesafio || !dados.desafio) return null;
+
+  const pontos = dados.pontosNoMes ?? 0;
+
+  return (
+    <button type="button" className="c-card-desafio" onClick={() => navegar(rotas.desafio)}>
+      <span className="c-card-desafio-numero">{pontos}</span>
+      <span className="c-card-desafio-texto">
+        <strong>{dados.desafio.nome}</strong>
+        <span>
+          {pontos === 1 ? "1 ponto neste mês" : `${pontos} pontos neste mês`}
+          {dados.posicao != null ? ` · ${dados.posicao}º no ranking` : ""}
+        </span>
+      </span>
+      <Icone nome="seta" tamanho={18} />
+    </button>
   );
 }

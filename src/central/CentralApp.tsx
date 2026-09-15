@@ -10,6 +10,7 @@ import { CategoriaDetalhe } from "./pages/CategoriaDetalhe";
 import { EstabelecimentoDetalhe } from "./pages/EstabelecimentoDetalhe";
 import { Guias } from "./pages/Guias";
 import { GuiaDetalhe } from "./pages/GuiaDetalhe";
+import { Desafio } from "./pages/Desafio";
 import { Salvos } from "./pages/Salvos";
 import { Busca } from "./pages/Busca";
 import { FaixaDemonstracao } from "./components/FaixaDemonstracao";
@@ -49,6 +50,7 @@ export function CentralApp() {
           />
           <Route path="guias" element={<Guias />} />
           <Route path="guias/:guiaId" element={<GuiaDetalhe />} />
+          <Route path="desafio" element={<Desafio />} />
           <Route path="salvos" element={<Salvos />} />
           <Route path="busca" element={<Busca />} />
           <Route path="*" element={<Navigate to={rotas.home} replace />} />
