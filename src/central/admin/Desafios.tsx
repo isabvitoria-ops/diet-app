@@ -349,16 +349,22 @@ function LancarPontos({ desafio }: { desafio: DesafioAdmin }) {
     void repositorio.listarPacientes().then(definirPacientes).catch(() => definirPacientes([]));
   }, []);
 
+  // Trocar de desafio tem que trocar a ação escolhida junto. Guardar a
+  // anterior parece inofensivo e não é: o id continuaria válido, e ela
+  // lançaria no desafio errado sem a tela dar sinal nenhum.
   useEffect(() => {
     void repositorio
       .acoesDoDesafio(desafio.id)
       .then((lista) => {
         const ativas = lista.filter((a) => a.ativo && a.chave !== "indicacao");
         definirAcoes(ativas);
-        definirAcao((atual) => atual || ativas[0]?.id || "");
+        definirAcao((atual) =>
+          ativas.some((a) => a.id === atual) ? atual : (ativas[0]?.id ?? ""),
+        );
       })
       .catch(() => definirAcoes([]));
-  }, [desafio.id]);
+    definirSemana(String(desafio.semanaAtual ?? 1));
+  }, [desafio.id, desafio.semanaAtual]);
 
   const visiveis = pacientes.filter((p) =>
     p.nome.toLowerCase().includes(busca.trim().toLowerCase()),
@@ -367,6 +373,8 @@ function LancarPontos({ desafio }: { desafio: DesafioAdmin }) {
   const acaoEscolhida = acoes.find((a) => a.id === acao) ?? null;
   const semanas = Array.from({ length: desafio.totalDeSemanas }, (_, i) => i + 1);
 
+  /** Devolve se deu certo: limpar os campos depois de um erro apagaria o que
+   *  ela acabou de digitar, e ela teria de escrever tudo de novo. */
   async function executar(tarefa: () => Promise<void>, recado: string) {
     definirOcupado(true);
     definirErro(null);
@@ -374,8 +382,10 @@ function LancarPontos({ desafio }: { desafio: DesafioAdmin }) {
     try {
       await tarefa();
       definirFeito(recado);
+      return true;
     } catch (e) {
       definirErro(e instanceof Error ? e.message : "Não consegui lançar.");
+      return false;
     } finally {
       definirOcupado(false);
     }
@@ -488,9 +498,11 @@ function LancarPontos({ desafio }: { desafio: DesafioAdmin }) {
                       desafio.id,
                     ),
                   `Lancei ${pontos} para ${escolhida.nome}.`,
-                ).then(() => {
-                  definirPontos("");
-                  definirMotivo("");
+                ).then((deuCerto) => {
+                  if (deuCerto) {
+                    definirPontos("");
+                    definirMotivo("");
+                  }
                 })
               }
             >

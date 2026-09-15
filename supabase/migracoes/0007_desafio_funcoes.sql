@@ -477,7 +477,8 @@ end;
 $$;
 
 /**
- * Validar a indicação: os 50 pontos saem aqui, e só quando ela confirma que a
+ * Validar a indicação: os pontos saem aqui (50 na época deste arquivo, 100
+ * desde o 0013), e só quando ela confirma que a
  * indicada começou o acompanhamento de verdade.
  */
 create or replace function validar_indicacao(p_indicacao uuid, p_paciente_indicada uuid default null)

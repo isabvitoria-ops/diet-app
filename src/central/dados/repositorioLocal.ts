@@ -19,7 +19,6 @@ import type {
   ResumoIndicacao,
 } from "@/central/types";
 import {
-  periodoDaSemana as _periodoDaSemana,
   semanaDoDesafio,
   situacaoDoDesafio,
   totalDeSemanas,

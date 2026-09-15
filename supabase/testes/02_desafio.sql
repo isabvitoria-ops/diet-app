@@ -674,6 +674,28 @@ end;
 $$;
 commit;
 
+-- Rascunho não recebe lançamento: a paciente nem sabe que ele existe.
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', true);
+insert into desafios (id, nome, data_inicio, data_fim, status)
+values ('00000000-0000-0000-0000-00000000d014', 'Rascunho de teste',
+        hoje_sp() + 80, hoje_sp() + 109, 'rascunho');
+do $$
+declare v_erro boolean := false;
+begin
+  begin
+    perform conceder_acao(
+      (select id from pacientes where email = 'd-ativa@paciente.test'),
+      (select id from desafio_acoes
+        where desafio_id = '00000000-0000-0000-0000-00000000d014' and chave = 'metas'));
+  exception when others then v_erro := true; end;
+  perform teste('não dá para lançar ponto num desafio em rascunho', v_erro);
+end;
+$$;
+delete from desafios where id = '00000000-0000-0000-0000-00000000d014';
+commit;
+
 -- E a paciente não lança nada para si mesma.
 begin;
 set local role authenticated;

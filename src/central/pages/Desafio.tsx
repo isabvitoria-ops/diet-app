@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { AcaoDoDesafio } from "@/central/types";
+import type { AcaoDoDesafio, IndicacaoDaPaciente } from "@/central/types";
 import { CabecalhoPagina } from "@/central/components/CabecalhoPagina";
 import { EstadoVazio } from "@/central/components/EstadoVazio";
 import { Icone } from "@/central/components/Icone";
@@ -53,6 +53,7 @@ export function Desafio() {
             <EscadaDeIndicacao
               beneficios={dados.beneficiosIndicacao}
               validadas={dados.indicacoesValidadas}
+              indicacoes={dados.indicacoes ?? []}
             />
           )}
         </div>
@@ -176,6 +177,7 @@ export function Desafio() {
         <EscadaDeIndicacao
           beneficios={dados.beneficiosIndicacao}
           validadas={dados.indicacoesValidadas}
+          indicacoes={dados.indicacoes ?? []}
         />
 
         {desafio.regras && (
@@ -365,12 +367,21 @@ function AvisoDePrevia() {
  * Quanto mais ela indica, mais ganha. O total não zera no fim do mês: é a
  * mesma regra dos pontos, que também não expiram.
  */
+const SITUACAO_INDICACAO: Record<IndicacaoDaPaciente["status"], string> = {
+  registrada: "Aguardando ela começar",
+  iniciou: "Começou o acompanhamento",
+  validada: "Confirmada",
+  recusada: "Não confirmada",
+};
+
 function EscadaDeIndicacao({
   beneficios,
   validadas,
+  indicacoes,
 }: {
   beneficios: { nivel: number; texto: string; alcancado: boolean }[];
   validadas: number;
+  indicacoes: IndicacaoDaPaciente[];
 }) {
   if (beneficios.length === 0) return null;
 
@@ -398,6 +409,22 @@ function EscadaDeIndicacao({
           </div>
         ))}
       </div>
+
+      {/* Sem esta lista a indicação sumia depois de registrada: a paciente
+          escrevia o nome da amiga e a tela não guardava sinal nenhum. */}
+      {indicacoes.length > 0 && (
+        <div className="c-ranking" style={{ marginTop: 14 }}>
+          {indicacoes.map((i) => (
+            <div key={i.id} className="c-ranking-linha">
+              <span className="c-ranking-nome">{i.nome}</span>
+              <span className="c-ranking-pontos">
+                {SITUACAO_INDICACAO[i.status]}
+                {i.pontos > 0 ? ` · +${i.pontos}` : ""}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

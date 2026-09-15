@@ -1360,7 +1360,8 @@ create unique index if not exists lancamentos_um_por_envio_idx
 -- -----------------------------------------------------------------------------
 -- Indicações
 --
--- Os 50 pontos não saem porque alguém disse que indicou: saem quando a
+-- Os pontos (50 aqui, 100 desde o 0013) não saem porque alguém disse que
+-- indicou: saem quando a
 -- indicada vira paciente de verdade e a nutricionista confirma (§9, §26).
 -- -----------------------------------------------------------------------------
 
@@ -1910,7 +1911,8 @@ end;
 $$;
 
 /**
- * Validar a indicação: os 50 pontos saem aqui, e só quando ela confirma que a
+ * Validar a indicação: os pontos saem aqui (50 na época deste arquivo, 100
+ * desde o 0013), e só quando ela confirma que a
  * indicada começou o acompanhamento de verdade.
  */
 create or replace function validar_indicacao(p_indicacao uuid, p_paciente_indicada uuid default null)
@@ -3168,6 +3170,14 @@ begin
     raise exception 'Ação não encontrada.' using errcode = '22023';
   end if;
   select * into v_desafio from desafios where id = v_acao.desafio_id;
+
+  -- Lançar num desafio encerrado é legítimo — é o caso de corrigir o mês
+  -- passado. Lançar num rascunho não: a paciente nem sabe que ele existe, e
+  -- o ponto apareceria no saldo dela vindo de lugar nenhum.
+  if v_desafio.status = 'rascunho' then
+    raise exception 'Este desafio ainda é um rascunho. Publique antes de lançar pontos.'
+      using errcode = '22023';
+  end if;
 
   if not exists (select 1 from pacientes where id = p_paciente) then
     raise exception 'Paciente não encontrada.' using errcode = '22023';

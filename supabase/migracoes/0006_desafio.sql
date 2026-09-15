@@ -187,7 +187,8 @@ create unique index if not exists lancamentos_um_por_envio_idx
 -- -----------------------------------------------------------------------------
 -- Indicações
 --
--- Os 50 pontos não saem porque alguém disse que indicou: saem quando a
+-- Os pontos (50 aqui, 100 desde o 0013) não saem porque alguém disse que
+-- indicou: saem quando a
 -- indicada vira paciente de verdade e a nutricionista confirma (§9, §26).
 -- -----------------------------------------------------------------------------
 
